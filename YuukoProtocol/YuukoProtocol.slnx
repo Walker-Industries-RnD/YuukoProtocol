@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="YuukoProtocol/YuukoProtocol.csproj" />
+  <Project Path="YuukoSandbox/YuukoSandbox.csproj" />
+</Solution>
