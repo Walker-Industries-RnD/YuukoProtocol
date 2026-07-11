@@ -20,11 +20,18 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="Standart.Hash.xxHash" Version="4.0.5" />
     <PackageReference Include="System.Data.HashFunction.Interfaces" Version="2.0.0" />
+    <PackageReference Include="Zenoh-CS" Version="0.4.1" />
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="PariahCybersecurity">
       <HintPath>PariahCybersecurity.dll</HintPath>
+    </Reference>
+    <Reference Include="EclipseLCL">
+      <HintPath>EclipseLCL.dll</HintPath>
+    </Reference>
+    <Reference Include="EclipseProject">
+      <HintPath>EclipseProject.dll</HintPath>
     </Reference>
   </ItemGroup>
 

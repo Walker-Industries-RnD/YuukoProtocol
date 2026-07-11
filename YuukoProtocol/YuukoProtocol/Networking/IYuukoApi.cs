@@ -1,7 +1,3 @@
-// IYuukoApi.cs
-// YuukoProtocol pub/sub contract + in-process LocalBroker
-// Walker Industries R&D
-
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -11,13 +7,7 @@ using System.Threading.Tasks;
 
 namespace YuukoProtocol
 {
-    // ── Interface ─────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// YuukoProtocol pub/sub contract.
-    /// Production:  EclipseBroker (routes through Eclipse RPC server, full Kyber+AES crypto).
-    /// Testing:     LocalBroker   (in-process, zero network dependency).
-    /// </summary>
     public interface IYuukoApi
     {
         /// <summary>Push a packet to all subscribers of <paramref name="topic"/>.</summary>
@@ -32,23 +22,13 @@ namespace YuukoProtocol
         /// <summary>Remove a previously registered handler from <paramref name="topic"/>.</summary>
         Task UnsubscribeAsync(string topic, Func<YuukoPacket, Task> handler, CancellationToken ct = default);
 
-        /// <summary>Convenience: publish a tombstone (delete signal) for a named packet.</summary>
+        /// <summary>Publish a tombstone (delete signal) for a named packet.</summary>
         Task TombstoneAsync(string topic, string name, CancellationToken ct = default) =>
             PublishAsync(topic, YuukoPacket.Tombstone(name), ct);
     }
 
-    // ── LocalBroker ──────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// In-process pub/sub broker. Ideal for unit tests and standalone tooling.
-    /// Thread-safe. Swap for EclipseBroker in production deployments.
-    /// </summary>
-    /// 
-    ///<warning>
-    ///
-    /// Use EclipseBroker in production, NEVER LocalBroker!
-    /// 
-    /// </warning>
+
     public sealed class LocalBroker : IYuukoApi, IDisposable
     {
         private readonly ConcurrentDictionary<string, List<Func<YuukoPacket, Task>>> _subs  = new();
@@ -118,4 +98,5 @@ namespace YuukoProtocol
 
         public void Dispose() => _lock.Dispose();
     }
+
 }

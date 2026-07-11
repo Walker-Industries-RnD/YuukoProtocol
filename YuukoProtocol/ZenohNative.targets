@@ -1,0 +1,110 @@
+<!--
+  ZenohNative.targets — Walker Industries R&D
+
+  Makes `dotnet build` (and `dotnet publish`) automatically fetch the correct
+  native zenoh-c v1.6.2 shared library for whatever machine is building, cache
+  it, and copy it next to your output DLL — so ZenohBroker just works the
+  moment the build finishes. No manual download, nothing committed to git.
+
+  Pinned to zenoh-c 1.6.2 because that's the version Zenoh-CS 0.4.0–0.4.1 is
+  built against (per github.com/sanri/zenoh-csharp's own compatibility table —
+  mismatch that and P/Invoke signatures silently disagree with the real ABI).
+  Bump ZenohCVersion here only when you also bump the Zenoh-CS package version
+  and have confirmed the new pairing.
+
+  USAGE — add one line near the top of YuukoProtocol.csproj, right after the
+  opening <Project> tag or right before its closing tag:
+
+      <Import Project="ZenohNative.targets" />
+
+  That's the whole integration. First build downloads ~15MB once and caches it
+  in .zenoh-native/ next to this file; every build after that just copies from
+  cache. Delete .zenoh-native/ to force a re-fetch.
+
+  Covers: win-x64, linux-x64, linux-arm64 (glibc), osx-x64, osx-arm64.
+  NOT covered: musl-based Linux (Alpine) — it would need the "-musl-" asset
+  variant instead of "-gnu-"; add a case below if you need it. Windows-arm64
+  isn't published upstream as of 1.6.2, so it isn't listed either.
+
+  No hash pinning here — I didn't have verified sha256 values for the 1.6.2
+  assets specifically to embed as fact. If you want supply-chain hardening,
+  add a <GetFileHash> check against hashes you've verified yourself from
+  https://github.com/eclipse-zenoh/zenoh-c/releases/tag/1.6.2 before the Unzip
+  step below.
+-->
+<Project>
+
+  <PropertyGroup>
+    <ZenohCVersion>1.6.2</ZenohCVersion>
+    <ZenohNativeCacheDir>$(MSBuildThisFileDirectory).zenoh-native\$(ZenohCVersion)\</ZenohNativeCacheDir>
+    <ZenohExtractDir>$(ZenohNativeCacheDir)extracted\</ZenohExtractDir>
+    <_ZenohOSArch>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)</_ZenohOSArch>
+  </PropertyGroup>
+
+  <!-- Exact, verified zenoh-c 1.6.2 release asset name + native lib extension per platform.
+       Verified by checking each asset actually resolves on
+       github.com/eclipse-zenoh/zenoh-c/releases/download/1.6.2/<name> — not guessed. -->
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows')) And '$(_ZenohOSArch)' == 'X64'">
+    <ZenohAssetName>zenoh-c-$(ZenohCVersion)-x86_64-pc-windows-msvc-standalone.zip</ZenohAssetName>
+    <ZenohNativeLibPattern>*.dll</ZenohNativeLibPattern>
+  </PropertyGroup>
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Linux')) And '$(_ZenohOSArch)' == 'X64'">
+    <ZenohAssetName>zenoh-c-$(ZenohCVersion)-x86_64-unknown-linux-gnu-standalone.zip</ZenohAssetName>
+    <ZenohNativeLibPattern>*.so</ZenohNativeLibPattern>
+  </PropertyGroup>
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Linux')) And '$(_ZenohOSArch)' == 'Arm64'">
+    <!-- This is the branch that matters for the RK3576/RK3588 Vector Gear targets. -->
+    <ZenohAssetName>zenoh-c-$(ZenohCVersion)-aarch64-unknown-linux-gnu-standalone.zip</ZenohAssetName>
+    <ZenohNativeLibPattern>*.so</ZenohNativeLibPattern>
+  </PropertyGroup>
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('OSX')) And '$(_ZenohOSArch)' == 'X64'">
+    <ZenohAssetName>zenoh-c-$(ZenohCVersion)-x86_64-apple-darwin-standalone.zip</ZenohAssetName>
+    <ZenohNativeLibPattern>*.dylib</ZenohNativeLibPattern>
+  </PropertyGroup>
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('OSX')) And '$(_ZenohOSArch)' == 'Arm64'">
+    <ZenohAssetName>zenoh-c-$(ZenohCVersion)-aarch64-apple-darwin-standalone.zip</ZenohAssetName>
+    <ZenohNativeLibPattern>*.dylib</ZenohNativeLibPattern>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(ZenohAssetName)' != ''">
+    <ZenohAssetUrl>https://github.com/eclipse-zenoh/zenoh-c/releases/download/$(ZenohCVersion)/$(ZenohAssetName)</ZenohAssetUrl>
+    <ZenohZipPath>$(ZenohNativeCacheDir)$(ZenohAssetName)</ZenohZipPath>
+  </PropertyGroup>
+
+  <Target Name="FetchZenohNative" BeforeTargets="Build;Publish">
+
+    <Error Condition="'$(ZenohAssetName)' == ''"
+           Text="ZenohNative.targets doesn't recognize this OS/architecture combination (OS platform + $(_ZenohOSArch)). Add a matching PropertyGroup case above, or fetch zenoh-c $(ZenohCVersion) by hand from https://github.com/eclipse-zenoh/zenoh-c/releases/tag/$(ZenohCVersion) and drop the shared library next to your build output." />
+
+    <ItemGroup>
+      <_ExistingZenohLib Include="$(ZenohExtractDir)**\$(ZenohNativeLibPattern)" Condition="Exists('$(ZenohExtractDir)')" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(ZenohNativeCacheDir)" Condition="!Exists('$(ZenohNativeCacheDir)') And '@(_ExistingZenohLib)' == ''" />
+
+    <DownloadFile Condition="'@(_ExistingZenohLib)' == ''"
+                  SourceUrl="$(ZenohAssetUrl)"
+                  DestinationFolder="$(ZenohNativeCacheDir)"
+                  Retries="2" />
+
+    <Unzip Condition="'@(_ExistingZenohLib)' == '' And Exists('$(ZenohZipPath)')"
+           SourceFiles="$(ZenohZipPath)"
+           DestinationFolder="$(ZenohExtractDir)"
+           OverwriteReadOnlyFiles="true" />
+
+    <ItemGroup>
+      <_ZenohNativeLib Include="$(ZenohExtractDir)**\$(ZenohNativeLibPattern)" />
+    </ItemGroup>
+
+    <Error Condition="'@(_ZenohNativeLib)' == ''"
+           Text="Downloaded $(ZenohAssetName) but found no $(ZenohNativeLibPattern) inside it under $(ZenohExtractDir) — the zenoh-c release layout may have changed since this was written. Check that folder by hand." />
+
+    <Copy SourceFiles="@(_ZenohNativeLib)" DestinationFolder="$(OutDir)"
+          SkipUnchangedFiles="true" Condition="'$(OutDir)' != ''" />
+    <Copy SourceFiles="@(_ZenohNativeLib)" DestinationFolder="$(PublishDir)"
+          SkipUnchangedFiles="true" Condition="'$(PublishDir)' != ''" />
+
+    <Message Importance="high" Text="[ZenohNative] shipped %(_ZenohNativeLib.Filename)%(_ZenohNativeLib.Extension) for $(_ZenohOSArch)" />
+  </Target>
+
+</Project>

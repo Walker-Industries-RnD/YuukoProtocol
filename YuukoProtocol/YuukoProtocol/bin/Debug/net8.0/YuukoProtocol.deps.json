@@ -17,6 +17,9 @@
           "Newtonsoft.Json": "13.0.4",
           "Standart.Hash.xxHash": "4.0.5",
           "System.Data.HashFunction.Interfaces": "2.0.0",
+          "Zenoh-CS": "0.4.1",
+          "EclipseLCL": "1.0.0.0",
+          "EclipseProject": "1.0.0.0",
           "PariahCybersecurity": "1.0.0.1"
         },
         "runtime": {
@@ -224,6 +227,30 @@
           }
         }
       },
+      "Zenoh-CS/0.4.1": {
+        "runtime": {
+          "lib/netstandard2.0/Zenoh.dll": {
+            "assemblyVersion": "0.4.1.0",
+            "fileVersion": "0.4.1.0"
+          }
+        }
+      },
+      "EclipseLCL/1.0.0.0": {
+        "runtime": {
+          "EclipseLCL.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "EclipseProject/1.0.0.0": {
+        "runtime": {
+          "EclipseProject.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
       "PariahCybersecurity/1.0.0.1": {
         "runtime": {
           "PariahCybersecurity.dll": {
@@ -358,6 +385,23 @@
       "sha512": "sha512-ryTgF+iFkpGZY1vRQhfCzX0xTdlV3pyaTTqRu2ETbEv+HlV7O6y7hyQURnghNIXvctl5DuZ//Dpks6HdL/Txgw==",
       "path": "system.io.pipelines/6.0.3",
       "hashPath": "system.io.pipelines.6.0.3.nupkg.sha512"
+    },
+    "Zenoh-CS/0.4.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-JuT0U+wJPupeyy+COz60rvGzzKjAbd0sT5y+L5xhj25sjOdqqa0T6iEZ0aDZnLOPwZgdW3TLfAJos+o3SWRNjQ==",
+      "path": "zenoh-cs/0.4.1",
+      "hashPath": "zenoh-cs.0.4.1.nupkg.sha512"
+    },
+    "EclipseLCL/1.0.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "EclipseProject/1.0.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
     },
     "PariahCybersecurity/1.0.0.1": {
       "type": "reference",

@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Yuuko Protocol]]></title><description><![CDATA[Obsidian digital garden]]></description><link>http://github.com/dylang/node-rss</link><image><url>site-lib/media/favicon.png</url><title>Yuuko Protocol</title><link></link></image><generator>Webpage HTML Export plugin for Obsidian</generator><lastBuildDate>Sat, 11 Jul 2026 21:08:34 GMT</lastBuildDate><atom:link href="site-lib/rss.xml" rel="self" type="application/rss+xml"/><pubDate>Sat, 11 Jul 2026 21:08:30 GMT</pubDate><ttl>60</ttl><dc:creator></dc:creator><item><title><![CDATA[1 - Welcome]]></title><description><![CDATA[ <img alt="Yuuko Protocol" src="assets/yuuko-protocol.png" referrerpolicy="no-referrer" target="_self"> A Five Stage Protocol Handling Decentralized Sync and Communication Yuuko Protocol is a decentralized protocol created for the XRUIOS; it uses "The Holy Mother", an orchestrator, to handle a multitude of datastreams like files, realtime data, messages and even videos alongside syncing. Cross Platform • Internet, Wifi Direct or Wired • Post Quantum Computing Resistant • No BS "The Holy Mother", handles creating and managing application streams automatically
+Nintendo Streetpass style communication between devices, minimal bandwidth and high count support
+XMPP based notifications WebRTC + Facade (WIP) Based Interaction And Video Streaming
+Event Sourcing - Trust and Permissions
+CRDT System - Realtime UI and States
+Git Style System - File and Assets
+AES-256-GCM for request/response payloads Hard for third-party processes to inject or read traffic Designed for local-first scenarios (desktop apps ↔ local LLMs ↔ tools ↔ services) No central server required beyond the machine itself The following (Free, Open Source Solutions on our Github) libraries are required for this to workl<br><a data-tooltip-position="top" aria-label="https://github.com/Walker-Industries-RnD/PariahCybersecurity" rel="noopener nofollow" class="external-link is-unresolved" href="https://github.com/Walker-Industries-RnD/PariahCybersecurity" target="_self">- Pariah Cybersecurity </a><br>
+<a data-tooltip-position="top" aria-label="https://github.com/Walker-Industries-RnD/Secure-Store/tree/main" rel="noopener nofollow" class="external-link is-unresolved" href="https://github.com/Walker-Industries-RnD/Secure-Store/tree/main" target="_self">- Secure Store </a><br>Check out <a data-href="2 - Setup Notes" href=".html" class="internal-link" target="_self" rel="noopener nofollow">2 - Setup Notes</a>!Check these out!<br><a data-tooltip-position="top" aria-label="https://github.com/Walker-Industries-RnD/XRUIOS.Barebones" rel="noopener nofollow" class="external-link is-unresolved" href="https://github.com/Walker-Industries-RnD/XRUIOS.Barebones" target="_self">XRUIOS.Barebones; the project this was made for and</a><br><a data-tooltip-position="top" aria-label="https://github.com/Walker-Industries-RnD/XRUIOS.Dirac/tree/main" rel="noopener nofollow" class="external-link is-unresolved" href="https://github.com/Walker-Industries-RnD/XRUIOS.Dirac/tree/main" target="_self">XRUIOS.Dirac; the implementation of this on a real setting!</a>
+Zenoh C# Based API Created
+Eclipse-Secured Handshake + Per-Peer Encrypted Sessions (Kyber-1024 + AES-256-GCM)
+Multiplexed Lanes (parallel encrypted requests per peer)
+Connected Endpoints Handler
+CRDT Handler
+Operational Transformation Handler
+Event Sourcing Handler
+Git Style DAG + Keeper Of Tomes
+Service Handler
+Trust Based Sync Visibility
+Easy BLE/Wifi Handling
+P2P Mesh (Secure) — secure core done; discovery/replication pending
+<br>Built and benchmarked — see <a data-href="1 - System Design" href=".html" class="internal-link" target="_self" rel="noopener nofollow">1 - System Design</a> for numbers (~2.4 ms post-quantum handshake, then ~54 µs warm request round-trips; the crypto is effectively free).
+Enrollment → registers client ID + PSK Handshake → Kyber-encrypted key exchange → shared secret Session → AES-256-GCM + per-message nonces Transcript → HMAC-protected log of handshake messages → prevents downgrade &amp; MITM Designed to resist classical &amp; quantum adversaries (where Kyber helps)
+Code<br>
+<a data-tooltip-position="top" aria-label="https://raw.githubusercontent.com/non-ai-licenses/non-ai-licenses/main/NON-AI-MPL-2.0" rel="noopener nofollow" class="external-link is-unresolved" href="https://raw.githubusercontent.com/non-ai-licenses/non-ai-licenses/main/NON-AI-MPL-2.0" target="_self">NON-AI MPL 2.0</a>This software is licensed under MPL 2.0 with the following exception:Artwork
+© Its a ANTWAN — NO AI training. NO reproduction. NO exceptions.
+Unauthorized use of the artwork — including copying, distribution, modification, or inclusion in any machine-learning training dataset — is strictly prohibited and will be prosecuted to the fullest extent of the law.
+]]></description><link>1-welcome.html</link><guid isPermaLink="false">1 - Welcome.md</guid><pubDate>Sat, 11 Jul 2026 21:07:09 GMT</pubDate><enclosure url="." length="0" type="false"/><content:encoded>&lt;figure&gt;&lt;img src=&quot;.&quot;&gt;&lt;/figure&gt;</content:encoded></item><item><title><![CDATA[ANTWAN]]></title><description><![CDATA[<img src="assets/antwan.png" target="_self">]]></description><link>assets/antwan.html</link><guid isPermaLink="false">Assets/ANTWAN.png</guid><pubDate>Sat, 11 Jul 2026 21:04:37 GMT</pubDate><enclosure url="assets/antwan.png" length="0" type="image/png"/><content:encoded>&lt;figure&gt;&lt;img src=&quot;assets/antwan.png&quot;&gt;&lt;/figure&gt;</content:encoded></item><item><title><![CDATA[ToDo]]></title><description><![CDATA[Unfinished, there are still chunks that need to be fixed for the v1!This is no longer Windows Centric (Although it uses Windows logic for specific things as an example); it instead now allows you to add on different interfaces through the Plagues Protocol (Maybe? I might replace Plagues Protocol) system so Windows, Linux, Godot, etc. based logic is more easy to slap on!Current Goals Include:
+Adding the Window Renderers for VR to Desktop and Desktop to VR
+Fixing Songs, Music Queue and Playlists (Possibly Geo stuff too, add virtual Geo) as a XRUIOS.Barebones Test
+Making the Aether Engine runtime
+Connecting to Project Replicant with Eclipse/Dirac Sea
+Putting within Plagues Protocol
+Adding a camera permission with realtime encryption
+Related: <a data-href="1 - Welcome" href="1-welcome.html" class="internal-link" target="_self" rel="noopener nofollow">1 - Welcome</a> · <a data-href="What is a XRUIOS" href=".html" class="internal-link" target="_self" rel="noopener nofollow">What is a XRUIOS</a> · <a data-href="1 - System Design" href=".html" class="internal-link" target="_self" rel="noopener nofollow">1 - System Design</a> · <a data-href="1 - The DOGMAs" href="2-development-plans/1-the-dogmas.html" class="internal-link" target="_self" rel="noopener nofollow">1 - The DOGMAs</a>]]></description><link>wip/todo.html</link><guid isPermaLink="false">WIP/ToDo.md</guid><pubDate>Sat, 11 Jul 2026 20:39:12 GMT</pubDate></item><item><title><![CDATA[4 - Yuuko Bindings (Part 1)]]></title><description><![CDATA[Yuuko Bindings solves the fundamental problem of cross-device computing: "My files are on Device A, but I'm on Device B. Where are they now?" It gives every path (and file) the same UUID across devices, so app code never has to care about the actual path.For the full deep-dive (hash-based UUIDs, three-tier resolution, fallback creation, PhotonStars network layer, "How Yuuko Currently Works"), see <a data-tooltip-position="top" aria-label="5 - Yuuko Bindings (Part 2)" data-href="5 - Yuuko Bindings (Part 2)" href="1-getting-started/5-yuuko-bindings-(part-2).html" class="internal-link" target="_self" rel="noopener nofollow">The File System Abstraction</a>.// On Device A
+var (uuid, path) = await manager.GetOrCreateDirectory(@"C:\Music"); // Share just the UUID with Device B
+// On Device B
+var file = await Media.GetFile(uuid, "song.mp3");
+// It just works, even if music is in D:\Songs on Device B!
+See? It's elegant! You should be proud of this, dummy! Crosses arms smugly.
+Note: I didn't notice she put this here, thanks<br>Related: <a data-tooltip-position="top" aria-label="5 - Yuuko Bindings (Part 2)" data-href="5 - Yuuko Bindings (Part 2)" href="1-getting-started/5-yuuko-bindings-(part-2).html" class="internal-link" target="_self" rel="noopener nofollow">Yuuko Bindings (deep-dive)</a> · <a data-href="XRUIOS Function Reference" href=".html" class="internal-link" target="_self" rel="noopener nofollow">XRUIOS Function Reference</a> · <a data-href="What is a XRUIOS" href=".html" class="internal-link" target="_self" rel="noopener nofollow">What is a XRUIOS</a>]]></description><link>1-getting-started/4-yuuko-bindings-(part-1).html</link><guid isPermaLink="false">1 - Getting Started/4 - Yuuko Bindings (Part 1).md</guid><pubDate>Sat, 11 Jul 2026 20:38:15 GMT</pubDate></item><item><title><![CDATA[DOGMA IV - Merkle DAG]]></title><description><![CDATA[
+A sync layer of the <a data-href="1 - System Design" href=".html" class="internal-link" target="_self" rel="noopener nofollow">1 - System Design</a>.
+✓ Best for: File sync, version history
+✓ Pros: Proven, efficient, content-addressed
+✓ Cons: Merge conflicts require manual resolution
+✓ Use: Files, settings, asset libraries
+<br>The "Git Style DAG + Keeper Of Tomes" stage from <a data-href="1 - Welcome" href="1-welcome.html" class="internal-link" target="_self" rel="noopener nofollow">1 - Welcome</a>.<br>Files and assets are content-addressed with identical content hashes to the same node regardless of device, which is a perfect fit with <a data-tooltip-position="top" aria-label="5 - Yuuko Bindings (Part 2)" data-href="5 - Yuuko Bindings (Part 2)" href="1-getting-started/5-yuuko-bindings-(part-2).html" class="internal-link" target="_self" rel="noopener nofollow">Yuuko Bindings</a> (UUID per directory) and Keeper of Tomes for albums/songs/app directories. "Replicate if hot" (PhotonStars) is the DAG spreading popular content to nearby nodes, BitTorrent-style.
+Content addressing means dedup + verifiable integrity for free; the handshake/session already guarantees the transport is authenticated and encrypted.
+<br>Merges that genuinely conflict fall back to manual resolution (or branch), unlike the auto-merging <a data-href="DOGMA I - CRDT" href="2-development-plans/dogma-i-crdt.html" class="internal-link" target="_self" rel="noopener nofollow">DOGMA I - CRDT</a>.
+<br>The DOGMAs: <a data-href="DOGMA I - CRDT" href="2-development-plans/dogma-i-crdt.html" class="internal-link" target="_self" rel="noopener nofollow">DOGMA I - CRDT</a> · <a data-href="DOGMA II - Operational Transformation" href="2-development-plans/dogma-ii-operational-transformation.html" class="internal-link" target="_self" rel="noopener nofollow">DOGMA II - Operational Transformation</a> · <a data-href="DOGMA III - Event Sourcing" href="2-development-plans/dogma-iii-event-sourcing.html" class="internal-link" target="_self" rel="noopener nofollow">DOGMA III - Event Sourcing</a> · <a data-href="DOGMA IV - Merkle DAG" href="2-development-plans/dogma-iv-merkle-dag.html" class="internal-link" target="_self" rel="noopener nofollow">DOGMA IV - Merkle DAG</a> · <a data-href="DOGMA V - The Holy Mother" href="2-development-plans/dogma-v-the-holy-mother.html" class="internal-link" target="_self" rel="noopener nofollow">DOGMA V - The Holy Mother</a> <a data-tooltip-position="top" aria-label="1 - The DOGMAs" data-href="1 - The DOGMAs" href="2-development-plans/1-the-dogmas.html" class="internal-link" target="_self" rel="noopener nofollow">index</a>]]></description><link>2-development-plans/dogma-iv-merkle-dag.html</link><guid isPermaLink="false">2 - Development Plans/DOGMA IV - Merkle DAG.md</guid><pubDate>Sat, 11 Jul 2026 20:38:15 GMT</pubDate></item><item><title><![CDATA[3 - The Underlying Logic]]></title><description><![CDATA["Everything is a node, every node has a sync state, and trust determines visibility."The secure transport + session layer is done and measured. The sync layers on top of it are the next work — the architecture options below are the design space for that, not yet code.By the end, the system will look something along the lines of // Sits ON TOP of the built EclipseBroker secure transport.
+public class YuukoSyncEngine
+{ private readonly EclipseBroker _secureTransport; // ✅ built private CRDTStore&lt;DeviceState&gt; _realtimeStates; // 📐 UI positions, sensor data private EventStore&lt;TrustEvent&gt; _trustEvents; // 📐 trust / permission changes private ContentAddressedStore _files; // 📐 assets (Merkle DAG) private YDoc _collaborativeDocs;// 📐 collaborative documents
+}
+alongside a secondary model for Service Handling.]]></description><link>1-getting-started/3-the-underlying-logic.html</link><guid isPermaLink="false">1 - Getting Started/3 - The Underlying Logic.md</guid><pubDate>Sat, 11 Jul 2026 20:38:05 GMT</pubDate></item><item><title><![CDATA[1 - Quickstart]]></title><description><![CDATA[Each node is a peer-to-peer Zenoh participant that establishes an Eclipse-secured session per peer before any data moves. All application crypto runs through the Eclipse DLL (EclipseProject.Security) and Pariah (post-quantum primitives) — no reimplementation.Handshake (challenge-response over a handshake topic):
+Requester → HELLO { kyberPublicKey, nonceC }
+Provider runs an admission check (banned-list today; trust levels later)
+Provider Kyber-encapsulates to the requester's key, derives session keys via Security.PrepareKeys (HKDF-SHA256), and → CHALLENGE { kemCipher, nonceS, sessionId, enc(random) }
+Requester decapsulates (proving it holds the private key), derives the same keys, decrypts the challenge and echoes it back encrypted
+Failure → provider erases the pending handshake and → REJECT
+Success → both hold a HandshakeSession; data flows encrypted end-to-end
+Sessions &amp; lanes: each session multiplexes over a pool of independent AeadChannel lanes (default 8) with distinct nonce spaces, so multiple requests to one peer run in parallel while each lane stays sequence-ordered. Lane 0 doubles as the handshake lane.Beyond the two other libraries mentioned in Welcome, you want to add
+dotnet add package Zenoh-CS --version 0.4.1
+This is a P/Invoke Wrapper over Zenoh-c, meaning you should be getting most of the benefits of Zenoh. The official Zenoh has yet to make an official binding.
+Zenoh-CS 0.4.1 requires zenoh-c v1.6.2 built/installed with the UNSTABLE_API and SHARED_MEMORY cmake options, matching the flags baked into the Zenoh-CS managed assembly. Grab a prebuilt release from github.com/eclipse-zenoh/zenoh-c/releases or build from source, and make sure libzenohc(.so/.dll/.dylib) is on the loader path (next to the executable, or on PATH/LD_LIBRARY_PATH).using YuukoProtocol; // 1. Transport: Zenoh in production, LocalBroker for tests.
+IYuukoApi transport = ZenohBroker.Open(); // or new LocalBroker() // 2. Give this node a post-quantum identity.
+var identity = YuukoIdentity.Create("desktop-001"); // 3. Wrap the transport in the Eclipse-secured overlay.
+var opts = new EclipseBrokerOptions();
+opts.Handshake.BannedClients.Add("known-bad-app"); // admission
+opts.Handshake.MaxChannels = 8; // parallel lanes per peer
+using var node = EclipseBroker.Create(transport, identity, opts);
+await node.StartAsync(); // PROVIDER: publish data others can request.
+node.Serve("yuuko/vectorgear/sensors", YuukoPacket.FromBytes("temp", System.Text.Encoding.UTF8.GetBytes("36.5C"))); // REQUESTER: handshake-on-first-use, then fetch encrypted end-to-end.
+var packets = await node.RequestAsync("desktop-001", "yuuko/vectorgear/sensors");
+var testPacketGeneric = YuukoPacket.FromBytes("XM3", Encoding.UTF8.GetBytes("The XM3 is a revolutionary operating system designed for the Tactical Surface Fighters (TSFs). It drastically improves the mechas' combat capabilities and significantly reduces pilot fatality rates by optimizing movement, handling data dynamically, and utilizing advanced flight mechanics.")); //Generic tests
+//Basic packet test Console.WriteLine("Creating Broker...");
+Console.WriteLine("Packet Test"); var BasicPacketBroker = new LocalBroker(); await BasicPacketBroker.PublishAsync("UN/AlternativeProject/AlternativeIIII", testPacketGeneric); var BasicPacketStored = await BasicPacketBroker.RequestAsync("UN/AlternativeProject/AlternativeIIII");
+Console.WriteLine("Registered Message: " + BasicPacketStored[0].Name + " Data: " + BasicPacketStored[0].DataAsString());
+Console.WriteLine(Environment.NewLine); //Listen test Console.WriteLine("Listening Test..."); await BasicPacketBroker.SubscribeAsync("UN/AlternativeProject/AlternativeIIII", async pkt =&gt;
+{ Console.WriteLine( $"Message recieved! " + Environment.NewLine + $"Topic: {pkt.Name}" + Environment.NewLine + $"Data: {pkt.DataAsString()}"); await Task.CompletedTask;
+}); await BasicPacketBroker.PublishAsync("UN/AlternativeProject/AlternativeIIII", testPacketGeneric);
+]]></description><link>1-getting-started/1-quickstart.html</link><guid isPermaLink="false">1 - Getting Started/1 - Quickstart.md</guid><pubDate>Sat, 11 Jul 2026 20:37:01 GMT</pubDate></item><item><title><![CDATA[2 - Security]]></title><description><![CDATA[ • Identity: per-node Kyber-1024 keypair
+• Key exchange: Kyber-1024 KEM (ephemeral)
+• Key schedule: HKDF-SHA256 (PSK + nonces + KEM)
+• Payload: AES-256-GCM, per-msg nonce + seq
+• Transcript: HMAC-SHA256 over handshake msgs
+• Identity proof: challenge-response (holds priv)
+• Admission: banned-list (→ graded trust)
+• Signatures (optional): Dilithium5 But Why?
+Resists classical &amp; quantum adversaries — Kyber-1024 (KEM) and Dilithium5 (signatures) are NIST PQC selections.
+Forward secrecy across sessions: each handshake uses an ephemeral Kyber encapsulation, so a compromised session key doesn't expose past sessions. Per-message epoch rotation (AeadChannel.InitEpoch) is available for intra-session rekeying (📐 to wire up).
+Tamper-evident: GCM auth tags reject any modified ciphertext; monotonic per-lane sequence numbers reject replay/reorder.
+Isolation: a peer's session keys can't decrypt another peer's traffic (verified).
+]]></description><link>1-getting-started/2-security.html</link><guid isPermaLink="false">1 - Getting Started/2 - Security.md</guid><pubDate>Sat, 11 Jul 2026 20:36:29 GMT</pubDate></item><item><title><![CDATA[6 - An Overview]]></title><description><![CDATA[Yuuko Bindings are responsible for a few things, mainly related to how the XRUIOS, Project Replicant and other applications talk to each other. For example, Named Topics are a canonical string constants that connect to specific, preset paths. This ensures that even with future developments, the topic path never changes.
+YuukoTopics.VectorGearStreetpass = yuuko/streetpass/vectorgear Beyond this, Yuuko Bindings handle several of the base requirements for Yuuko Protocol to work (Such as the Yuuko Bindings themselves)The Holy Mother Operator handles several parts of wireless connection such as
+Creating and automating the connection of screenshares through the Facade API (For things like wireless gaming on other devices)
+Handling conflict resolution
+Auto Handling Changes To Data States (Specifically Using Keeper Of Tomes to update albums, songs, app directories, etc.)
+Handling connections is one of the both best and hardest parts of Yuuko Protocol. Standard connections (OSC, OpenClaw, etc.) leave data extremely vulnerable to being hacked and misused by hackers. Moreover, setting up between Ethernet, WAN, LAN and Wifi Direct is extremely hard due to the many libraries which exist without creating an easy to use solution for cross compatible software.With YuukoProtocol, we handle this through Eclipse Protocol (which handles handshake logic for local applications) and a Zenoh peer-to-peer transport secured per-peer with post-quantum Kyber-1024 key exchange and AES-256-GCM (via Eclipse's AeadChannel, no TLS termination required) for high quality data protection.]]></description><link>1-getting-started/6-an-overview.html</link><guid isPermaLink="false">1 - Getting Started/6 - An Overview.md</guid><pubDate>Sat, 11 Jul 2026 20:34:28 GMT</pubDate></item><item><title><![CDATA[Sync Part 2]]></title><description><![CDATA[message YuukoSyncMessage { enum MessageType { HANDSHAKE = 0; // ✅ implemented (YuukoHandshake) STATE_UPDATE = 1; TRUST_CHANGE = 2; FILE_CHUNK = 3; CONFLICT_RESOLUTION = 4; HEARTBEAT = 5; } string message_id = 1; MessageType type = 2; bytes payload = 3; // already carried inside an AES-256-GCM envelope per peer uint64 timestamp = 4; bytes signature = 5; // Dilithium5 (PQC) — not Ed25519, to match the PQ posture repeated string ack_for = 6;
+}
+]]></description><link>wip/sync-part-2.html</link><guid isPermaLink="false">WIP/Sync Part 2.md</guid><pubDate>Sat, 11 Jul 2026 20:29:14 GMT</pubDate></item><item><title><![CDATA[Sync System]]></title><description><![CDATA[Today this is the handshake's admission gate (HandshakeOptions.BannedClients). The design extends it to graded trust that filters what a peer may pull:public bool ShouldSync(Node node, TrustLevel requesterTrust) =&gt; node.MinimumTrust &lt;= requesterTrust &amp;&amp; !node.Blacklisted(requesterId) // ✅ banned-list exists today &amp;&amp; node.VisibilityRules.AllowSync(context); // 📐 public SyncPayload GetFilteredPayload(TrustLevel trust) =&gt; trust switch
+{ TrustLevel.Stranger =&gt; PublicDataOnly(), TrustLevel.Acquaintance =&gt; BasicProfile + PublicFiles, TrustLevel.Friend =&gt; MostDataExceptPrivate, TrustLevel.Trusted =&gt; EverythingExceptSecrets, TrustLevel.DeviceOwner =&gt; CompleteSync, _ =&gt; EmptyPayload()
+};
+Because identity is a Kyber keypair proven during the handshake, trust can be bound to a stable client identity rather than a spoofable address.public enum YuukoSyncMode
+{ Realtime, // instant, bidirectional (Zenoh pub/sub) LivePresence, // presence, typing indicators Opportunistic, // when devices are near (BLE) Background, // periodic background sync OnDemand, // user-initiated (today: EclipseBroker.RequestAsync) QRHandshake, // one-time pairing bootstrap Sneakernet, // USB / file transfer EmergencySync, // critical data only TrustBootstrap // initial trust establishment
+}
+]]></description><link>wip/sync-system.html</link><guid isPermaLink="false">WIP/Sync System.md</guid><pubDate>Sat, 11 Jul 2026 20:25:49 GMT</pubDate></item><item><title><![CDATA[1 - The DOGMAs]]></title><description><![CDATA[The four sync-replication strategies of the <a data-href="1 - System Design" href=".html" class="internal-link" target="_self" rel="noopener nofollow">1 - System Design</a>. Each is a layer on top of the ✅ built EclipseBroker secure transport; the Hybrid Model runs all four together, routing each node type to the strategy that fits it.<br>Related: <a data-href="1 - System Design" href=".html" class="internal-link" target="_self" rel="noopener nofollow">1 - System Design</a> · <a data-href="1 - Welcome" href="1-welcome.html" class="internal-link" target="_self" rel="noopener nofollow">1 - Welcome</a> · <a data-href="ToDo" href="wip/todo.html" class="internal-link" target="_self" rel="noopener nofollow">ToDo</a>]]></description><link>2-development-plans/1-the-dogmas.html</link><guid isPermaLink="false">2 - Development Plans/1 - The DOGMAs.md</guid><pubDate>Sat, 11 Jul 2026 20:20:02 GMT</pubDate></item><item><title><![CDATA[DOGMA V - The Holy Mother]]></title><description><![CDATA[
+An orchestration layer of the <a data-href="1 - System Design" href=".html" class="internal-link" target="_self" rel="noopener nofollow">1 - System Design</a>.
+✓ Best for: App Handling, WebRTC/Facade/Etc.
+✓ Pros: Simple to setup any service on another device
+✓ Cons: Complexity can become big if implemented wrong
+✓ Use: Services
+<br>The "Orchestration Layer" stage from <a data-href="1 - Welcome" href="1-welcome.html" class="internal-link" target="_self" rel="noopener nofollow">1 - Welcome</a>.Services are specialized datapoints created with the intent of allowing a node to easily setup and connect with a specific protocol or pipeline to another machine. Nodes show their service capabilities while handling automatic setup, encryption and an easy to use pipe for the data.
+Services still must be prepared to a user in the way a Replicant Service or OpenClaw "app" is.
+Services may block certain apps from running, independent of the Yuuko Protocol system.
+<br>The DOGMAs: <a data-href="DOGMA I - CRDT" href="2-development-plans/dogma-i-crdt.html" class="internal-link" target="_self" rel="noopener nofollow">DOGMA I - CRDT</a> · <a data-href="DOGMA II - Operational Transformation" href="2-development-plans/dogma-ii-operational-transformation.html" class="internal-link" target="_self" rel="noopener nofollow">DOGMA II - Operational Transformation</a> · <a data-href="DOGMA III - Event Sourcing" href="2-development-plans/dogma-iii-event-sourcing.html" class="internal-link" target="_self" rel="noopener nofollow">DOGMA III - Event Sourcing</a> · <a data-href="DOGMA IV - Merkle DAG" href="2-development-plans/dogma-iv-merkle-dag.html" class="internal-link" target="_self" rel="noopener nofollow">DOGMA IV - Merkle DAG</a> · <a data-href="DOGMA V - The Holy Mother" href="2-development-plans/dogma-v-the-holy-mother.html" class="internal-link" target="_self" rel="noopener nofollow">DOGMA V - The Holy Mother</a> <a data-tooltip-position="top" aria-label="1 - The DOGMAs" data-href="1 - The DOGMAs" href="2-development-plans/1-the-dogmas.html" class="internal-link" target="_self" rel="noopener nofollow">index</a>]]></description><link>2-development-plans/dogma-v-the-holy-mother.html</link><guid isPermaLink="false">2 - Development Plans/DOGMA V - The Holy Mother.md</guid><pubDate>Sat, 11 Jul 2026 20:20:02 GMT</pubDate></item><item><title><![CDATA[DOGMA III - Event Sourcing]]></title><description><![CDATA[
+A sync layer of the <a data-href="1 - System Design" href=".html" class="internal-link" target="_self" rel="noopener nofollow">1 - System Design</a>. ✓ Best for: Audit trails, complex business logic
+✓ Pros: Full history, replayability, debugging
+✓ Cons: Storage intensive, complex queries
+✓ Use: Trust changes, permissions, system events
+<br>The "Event Sourcing — Trust and Permissions" stage from <a data-href="1 - Welcome" href="1-welcome.html" class="internal-link" target="_self" rel="noopener nofollow">1 - Welcome</a>.<br>Trust and permission changes are an append-only, signed log — every change is a Dilithium5-signed event, so history is tamper evident and replayable. This is the substrate for <a data-tooltip-position="top" aria-label="1 - System Design" data-href="1 - System Design" href=".html" class="internal-link" target="_self" rel="noopener nofollow">trust-based sync visibility</a>: a peer's current trust level is a fold over its event history, bound to the Kyber identity proven at handshake.This ensures that tampering such a file becomes a harder task for those with malicious intent while also being able to handle sync errors.
+Pairs naturally with the handshake's admission gate with the banned list being the simplest projection; graded trust levels are richer projections over the same event stream.
+Events replicate as encrypted payloads over the per-peer session.
+<br>The DOGMAs: <a data-href="DOGMA I - CRDT" href="2-development-plans/dogma-i-crdt.html" class="internal-link" target="_self" rel="noopener nofollow">DOGMA I - CRDT</a> · <a data-href="DOGMA II - Operational Transformation" href="2-development-plans/dogma-ii-operational-transformation.html" class="internal-link" target="_self" rel="noopener nofollow">DOGMA II - Operational Transformation</a> · <a data-href="DOGMA III - Event Sourcing" href="2-development-plans/dogma-iii-event-sourcing.html" class="internal-link" target="_self" rel="noopener nofollow">DOGMA III - Event Sourcing</a> · <a data-href="DOGMA IV - Merkle DAG" href="2-development-plans/dogma-iv-merkle-dag.html" class="internal-link" target="_self" rel="noopener nofollow">DOGMA IV - Merkle DAG</a> · <a data-href="DOGMA V - The Holy Mother" href="2-development-plans/dogma-v-the-holy-mother.html" class="internal-link" target="_self" rel="noopener nofollow">DOGMA V - The Holy Mother</a> <a data-tooltip-position="top" aria-label="1 - The DOGMAs" data-href="1 - The DOGMAs" href="2-development-plans/1-the-dogmas.html" class="internal-link" target="_self" rel="noopener nofollow">index</a>]]></description><link>2-development-plans/dogma-iii-event-sourcing.html</link><guid isPermaLink="false">2 - Development Plans/DOGMA III - Event Sourcing.md</guid><pubDate>Sat, 11 Jul 2026 20:20:02 GMT</pubDate></item><item><title><![CDATA[DOGMA II - Operational Transformation]]></title><description><![CDATA[
+A sync layer of the <a data-href="1 - System Design" href=".html" class="internal-link" target="_self" rel="noopener nofollow">1 - System Design</a>. ✓ Best for: Text/code collaboration, Google Docs-style
+✓ Pros: Mature, efficient for text
+✓ Cons: Requires central server, complex algorithms
+✓ Use: Collaborative text editing, shared scripts
+<br>The "Operational Transformation Handler" stage from <a data-href="1 - Welcome" href="1-welcome.html" class="internal-link" target="_self" rel="noopener nofollow">1 - Welcome</a>. Where <a data-href="DOGMA I - CRDT" href="2-development-plans/dogma-i-crdt.html" class="internal-link" target="_self" rel="noopener nofollow">DOGMA I - CRDT</a> handles free form state, OT is the specialist for ordered text/code AKA collaborative editing of documents and shared scripts, handling concurrent operations so different machines can work with the samel fiels.
+OT classically wants a central authority to order operations; in a peer-to-peer Yuuko mesh that role can be pinned to whichever node "owns" the document (via the handshake identity), rather than a global server.
+Operations travel as encrypted payloads over the per peer session.
+<br>The DOGMAs: <a data-href="DOGMA I - CRDT" href="2-development-plans/dogma-i-crdt.html" class="internal-link" target="_self" rel="noopener nofollow">DOGMA I - CRDT</a> · <a data-href="DOGMA II - Operational Transformation" href="2-development-plans/dogma-ii-operational-transformation.html" class="internal-link" target="_self" rel="noopener nofollow">DOGMA II - Operational Transformation</a> · <a data-href="DOGMA III - Event Sourcing" href="2-development-plans/dogma-iii-event-sourcing.html" class="internal-link" target="_self" rel="noopener nofollow">DOGMA III - Event Sourcing</a> · <a data-href="DOGMA IV - Merkle DAG" href="2-development-plans/dogma-iv-merkle-dag.html" class="internal-link" target="_self" rel="noopener nofollow">DOGMA IV - Merkle DAG</a> · <a data-href="DOGMA V - The Holy Mother" href="2-development-plans/dogma-v-the-holy-mother.html" class="internal-link" target="_self" rel="noopener nofollow">DOGMA V - The Holy Mother</a> <a data-tooltip-position="top" aria-label="1 - The DOGMAs" data-href="1 - The DOGMAs" href="2-development-plans/1-the-dogmas.html" class="internal-link" target="_self" rel="noopener nofollow">index</a>]]></description><link>2-development-plans/dogma-ii-operational-transformation.html</link><guid isPermaLink="false">2 - Development Plans/DOGMA II - Operational Transformation.md</guid><pubDate>Sat, 11 Jul 2026 20:20:02 GMT</pubDate></item><item><title><![CDATA[DOGMA I - CRDT]]></title><description><![CDATA[
+A sync layer of the <a data-href="1 - System Design" href=".html" class="internal-link" target="_self" rel="noopener nofollow">1 - System Design</a>. ✓ Best for: Real-time collaboration, offline-first
+✓ Pros: Automatic conflict resolution, no central server needed
+✓ Cons: Complex implementation, larger sync payloads
+✓ Use: Device state, UI layouts, document editing
+Example: Automerge, Yjs, Delta-CRDT
+<br>This is the "CRDT System — Realtime UI and States" stage from <a data-href="1 - Welcome" href="1-welcome.html" class="internal-link" target="_self" rel="noopener nofollow">1 - Welcome</a>. It's what makes UI layouts and live sensor/tracking state update across devices with no central server and no manual conflict resolution.
+Prefer a .NET-native CRDT (or a port) so it lives in-process with the secure transport, rather than the JS options.
+Replication messages ride the per-peer encrypted session, AKA CRDT deltas are just payloads inside AES-256-GCM envelopes.
+<br>The DOGMAs: <a data-href="DOGMA I - CRDT" href="2-development-plans/dogma-i-crdt.html" class="internal-link" target="_self" rel="noopener nofollow">DOGMA I - CRDT</a> · <a data-href="DOGMA II - Operational Transformation" href="2-development-plans/dogma-ii-operational-transformation.html" class="internal-link" target="_self" rel="noopener nofollow">DOGMA II - Operational Transformation</a> · <a data-href="DOGMA III - Event Sourcing" href="2-development-plans/dogma-iii-event-sourcing.html" class="internal-link" target="_self" rel="noopener nofollow">DOGMA III - Event Sourcing</a> · <a data-href="DOGMA IV - Merkle DAG" href="2-development-plans/dogma-iv-merkle-dag.html" class="internal-link" target="_self" rel="noopener nofollow">DOGMA IV - Merkle DAG</a> · <a data-href="DOGMA V - The Holy Mother" href="2-development-plans/dogma-v-the-holy-mother.html" class="internal-link" target="_self" rel="noopener nofollow">DOGMA V - The Holy Mother</a> <a data-tooltip-position="top" aria-label="1 - The DOGMAs" data-href="1 - The DOGMAs" href="2-development-plans/1-the-dogmas.html" class="internal-link" target="_self" rel="noopener nofollow">index</a>]]></description><link>2-development-plans/dogma-i-crdt.html</link><guid isPermaLink="false">2 - Development Plans/DOGMA I - CRDT.md</guid><pubDate>Sat, 11 Jul 2026 20:20:02 GMT</pubDate></item><item><title><![CDATA[0 - What Is Yuuko Protocol]]></title><description><![CDATA[YuukoProtocol is a topic-based pub/sub messaging protocol** for the Walker
+Industries XR ecosystem (VectorGear/VectorGaze headsets, XRUIOS, Shinra Meisin eye/face
+tracking, Walker Gateway mesh). Think "MQTT-flavored message bus" with a few extra
+semantics baked into the packet model:
+Topics — hierarchical string labels (yuuko/streetpass/vectorgear, …).
+Name-keyed retained store — within a topic, the latest packet for a given Name
+overwrites the previous one (last-writer-wins, like a key/value retained map).
+Tombstones — a delete signal that removes a stored packet by name.
+Ephemeral packets — fire-and-forget; delivered to subscribers but never stored.
+Flags — tombstone, ephemeral, compressed, signed, binding_sync,
+rate_limited, partial.
+It ships in two parallel implementations that are intended to be wire-compatible:
+a C# library (the reference) and a Python mirror (yuuko_bridge).There are two broker backends behind one interface: YuukoBroker and LocalBroker.The domain/test data is themed after Muv-Luv Alternative (TSFs, the BETA, Yokohama
+Base, "Kouzaki Yuuko") — cosmetic, but it tells you which strings are real protocol
+identifiers vs. flavor.]]></description><link>1-getting-started/0-what-is-yuuko-protocol.html</link><guid isPermaLink="false">1 - Getting Started/0 - What Is Yuuko Protocol.md</guid><pubDate>Fri, 10 Jul 2026 16:53:40 GMT</pubDate></item><item><title><![CDATA[5 - Yuuko Bindings (Part 2)]]></title><description><![CDATA[Yuuko Bindings solves the fundamental problem of cross-device computing: "My files are on Device A, but I'm on Device B. Where are they now?"Specifically, we want to do this without just using relative filepaths.// Original path on Windows Desktop:
+"C:\Users\Alice\Music\Playlist\songName.mp3" // On Android phone becomes:
+"/storage/emulated/0/Music/Playlist/songNameAlt.mp3" // On Linux laptop becomes:
+"/home/alice/Music/Playlist/song."
+Yuuko Bindings gives all these paths and even files the same UUID: "A3F8C9D2E1B7"
+Hash-Based UUID Generation:
+// Uses xxHash64 on "DeviceName|FullPath"
+// "Desktop-PC|C:\Users\Alice\Music" → "A3F8C9D2E1B7"
+xxHash64 is fast, collision-resistant, and portable across platforms.
+Three-Tier Resolution:
+public async Task&lt;string?&gt; GetDirectoryById(string directoryId)
+{ // 1. Try original path on original device if (binding.Ref.OriginalDevice == ThisDeviceId &amp;&amp; Directory.Exists(binding.Ref.FullPath)) return binding.Ref.FullPath; // Fast path // 2. Try previously resolved path (verified) if (binding.Resolution?.Verified == true &amp;&amp; Directory.Exists(binding.Resolution.ResolvedPath)) return binding.Resolution.ResolvedPath; // Cached // 3. Resolve/create with fallback var resolvedPath = ResolveDirectory(binding, defaultFolder); // Creates local version if needed
+} Intelligent Fallback Creation:
+// If "C:\Users\Alice\Music" doesn't exist on this device:
+// Creates: "~/Documents/XRUIOS/A3F8C9D2E1B7/"
+// And remembers this resolution
+// App code NEVER cares about actual paths:
+var songPath = await dirManager.GetDirectoryById("A3F8C9D2E1B7");
+// Works on ANY device without code changes Save project on Windows desktop
+Open on Android tablet → files are there (copied/created locally)
+Edit on Linux laptop → same UUID, different physical path
+Sync changes back to original device when available
+// Device B can't reach Device A's original path?
+// No problem: uses last-known resolution
+// When Device A comes back online: automatic reconciliation
+This is where it gets interesting. [Device A] ←→ [PhotonStars Network] ←→ [Device B] ↑ [Device C, D, E...]
+public class PhotonStarNetwork
+{ // 1. DECENTRALIZED DISCOVERY public Task&lt;List&lt;StarNode&gt;&gt; DiscoverNodes() { // Not centralized servers, but peer-to-peer mesh // Each device is a "star" in the constellation } // 2. BINDING SYNCHRONIZATION public Task SyncBindings(StarNode targetNode) { // "Hey Device B, here are my directory bindings" // Device B merges them intelligently // Conflict resolution: timestamps, user preference } // 3. FEDERATED RESOLUTION public Task&lt;string&gt; FederatedResolve(string uuid) { // "Who has directory A3F8C9D2E1B7?" // Network consensus: "Device A has it at path X" // Or: "Multiple devices have it, here are options" } // 4. DYNAMIC REPLICATION public Task ReplicateIfHot(string uuid) { // If many devices request same directory // Automatically replicate to nearby nodes // Like BitTorrent for directories }
+}
+Kirito's NerveGear (Device A) ←→ Akihiko's Server (Network Hub) ←→ Asuna's AmuSphere (Device B)Yuuko bindings are the item/equipment database that persists across logout/login (device changes).App → Local File Path → ERROR (not on this device)
+App → UUID → Local Cache → (optional) Network Fetch
+App → UUID → Local Cache → Network Query → ↓
+[10 nearby devices respond with their paths/sync status] ↓
+Choose fastest/most recent → Stream/Sync
+Apps need to reference files across different devices, but file paths change between computers. What works on your dev machine breaks on someone else's. The Yuuko Protocol solves this by creating device-independent identifiers for directories that work everywhere.public readonly struct DirectoryRef
+This is where the magic happens. When you give it a path like C:\Users\Walker\Music, it:
+Takes the full absolute path
+Combines it with the device name (Environment.MachineName)
+Runs it through xxHash64 with seed "YUUKO"
+Outputs a 16-character hex ID (like 3F2A8B91C6D4E507)
+This ID is the same on every device that has the same path structure. No central server needed!public sealed class DirectoryBinding
+Each binding stores:
+Ref - The original reference (path + device)
+Resolution - Where it actually exists NOW on this device
+Think of it like a phonebook: you look up someone by name (UUID) to find their current address (resolved path).public string ResolveDirectory(DirectoryBinding binding, string? defaultFolder = null)
+When resolving a directory:
+Check if original path exists → use it directly
+If not, create fallback → MyDocuments/XRUIOS/{UUID}
+Save the resolution for next time
+This means if you move a folder, the system adapts without breaking references.if (binding.Ref.OriginalDevice == ThisDeviceId &amp;&amp; Directory.Exists(binding.Ref.FullPath)) return binding.Ref.FullPath;
+If the current device is the original one AND the path still exists, use it. Otherwise, resolve locally. This lets you:
+Share directory references between devices
+Each device resolves to its own local copy
+No manual path fixing needed
+The Media class wraps all this for actual file access:public static async Task&lt;ResolvedMedia&gt; GetFile(string directoryUuid, string fileName)
+It:
+Takes a directory UUID + filename
+Resolves the directory path
+Validates the file exists
+Returns full metadata
+public record Handle
+This is genius—it lets apps be referenced in multiple ways:
+Desktop - Running app window ID
+LocalApp - Installed app name
+YuukoApp - Cross-platform app definition
+BinaryData - Ad-hoc app bytes
+DirectoryRef - App stored in a directory No Central Server - Completely peer-to-peer ID generation
+Collision Resistant - xxHash64 with seed + device + path = practically unique
+Self-Healing - If paths move, it creates fallbacks
+Security Built In - Uses Pariah's encryption everywhere
+Simple API - GetFile(uuid, filename) just works
+// On Device A
+var (uuid, path) = await manager.GetOrCreateDirectory(@"C:\Music"); // Share just the UUID with Device B
+// On Device B
+var file = await Media.GetFile(uuid, "song.mp3");
+// It just works, even if music is in D:\Songs on Device B!
+See? It's elegant! You should be proud of this, dummy! Crosses arms smugly.]]></description><link>1-getting-started/5-yuuko-bindings-(part-2).html</link><guid isPermaLink="false">1 - Getting Started/5 - Yuuko Bindings (Part 2).md</guid><pubDate>Fri, 10 Jul 2026 16:34:03 GMT</pubDate></item><item><title><![CDATA[Yuuko Protocol]]></title><description><![CDATA[<img src="assets/yuuko-protocol.png" target="_self">]]></description><link>assets/yuuko-protocol.html</link><guid isPermaLink="false">Assets/Yuuko Protocol.png</guid><pubDate>Tue, 24 Mar 2026 23:04:05 GMT</pubDate><enclosure url="." length="0" type="false"/><content:encoded>&lt;figure&gt;&lt;img src=&quot;.&quot;&gt;&lt;/figure&gt;</content:encoded></item><item><title><![CDATA[Database_Walker_Default]]></title><description><![CDATA[<img src="assets/database_walker_default.png" target="_self">]]></description><link>assets/database_walker_default.html</link><guid isPermaLink="false">Assets/Database_Walker_Default.png</guid><pubDate>Tue, 24 Mar 2026 22:41:19 GMT</pubDate><enclosure url="assets/database_walker_default.png" length="0" type="image/png"/><content:encoded>&lt;figure&gt;&lt;img src=&quot;assets/database_walker_default.png&quot;&gt;&lt;/figure&gt;</content:encoded></item><item><title><![CDATA[Database_John_Default]]></title><description><![CDATA[<img src="assets/database_john_default.png" target="_self">]]></description><link>assets/database_john_default.html</link><guid isPermaLink="false">Assets/Database_John_Default.png</guid><pubDate>Tue, 24 Mar 2026 22:41:19 GMT</pubDate><enclosure url="assets/database_john_default.png" length="0" type="image/png"/><content:encoded>&lt;figure&gt;&lt;img src=&quot;assets/database_john_default.png&quot;&gt;&lt;/figure&gt;</content:encoded></item></channel></rss>
