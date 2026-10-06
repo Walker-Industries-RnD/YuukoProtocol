@@ -154,8 +154,11 @@ namespace YuukoProtocol
         /// <summary>Returns a borrowed lane to the pool.</summary>
         public void ReleaseLane(int lane)
         {
+            // The session may have been replaced (and disposed) while a request was in flight.
+            if (Volatile.Read(ref _disposed) != 0) return;
             _freeLanes.Enqueue(lane);
-            _laneAvailable.Release();
+            try { _laneAvailable.Release(); }
+            catch (ObjectDisposedException) { }
         }
 
         /// <summary>Encrypts a payload on <paramref name="lane"/>; returns wire bytes.</summary>
@@ -359,6 +362,14 @@ namespace YuukoProtocol
         /// <summary>Established session for a peer, if one exists.</summary>
         public bool TryGetSession(string remoteId, out HandshakeSession session) =>
             _sessions.TryGetValue(remoteId, out session!);
+
+        /// <summary>
+        /// Drops a cached session that has stopped working (for example because the provider
+        /// restarted and no longer knows it) so the next request handshakes again. Only removes
+        /// <paramref name="stale"/> itself, never a newer session another caller already made.
+        /// </summary>
+        public void Forget(string remoteId, HandshakeSession stale) =>
+            _sessions.TryRemove(new KeyValuePair<string, HandshakeSession>(remoteId, stale));
 
         /// <summary>
         /// Begins listening on the handshake topic so this peer can answer incoming

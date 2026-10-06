@@ -49,13 +49,13 @@ namespace YuukoProtocol
             await manager.LoadBindings();
 
 
-            var (resolved, unresolved) = await GetGenericDirectories(DataPath, encryptionKey);
+            var (resolved, unresolved) = await GetGenericDirectories(DataPath, encryptionKey, DataType);
             var match = resolved.Concat(unresolved).FirstOrDefault(r => string.Equals(r.Path, directory, StringComparison.OrdinalIgnoreCase));
             if (match != null) return match;
 
-            await AddGenericDirectory(DataPath, encryptionKey, directory!, directoryName ?? Guid.NewGuid().ToString());
+            await AddGenericDirectory(DataPath, encryptionKey, directory!, directoryName ?? Guid.NewGuid().ToString(), DataType);
 
-            (resolved, unresolved) = await GetGenericDirectories(DataPath, encryptionKey);
+            (resolved, unresolved) = await GetGenericDirectories(DataPath, encryptionKey, DataType);
             return resolved.Concat(unresolved).FirstOrDefault(r => string.Equals(r.Path, directory, StringComparison.OrdinalIgnoreCase));
         }
 
@@ -99,6 +99,10 @@ namespace YuukoProtocol
 
             await manager.LoadBindings();
 
+
+            // Nothing has been added yet: there is no bank file to read.
+            if (!File.Exists(Path.Combine(DataPath, DataType, "GenericBank.json")))
+                return (new List<DirectoryRecord>(), new List<DirectoryRecord>());
 
             var directoryFile = await DataHandler.JSONDataHandler.LoadJsonFile("GenericBank", Path.Combine(DataPath, DataType));
             var directories = (List<DirectoryRecord>)await DataHandler.JSONDataHandler.GetVariable<List<DirectoryRecord>>(directoryFile, "Data", encryptionKey);

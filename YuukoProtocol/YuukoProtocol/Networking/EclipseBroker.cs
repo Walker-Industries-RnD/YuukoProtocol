@@ -50,7 +50,8 @@ namespace YuukoProtocol
         private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, YuukoPacket>> _store = new();
 
         // Requester: in-flight requests awaiting a reply, keyed by request id.
-        private readonly ConcurrentDictionary<string, TaskCompletionSource<IReadOnlyList<YuukoPacket>>> _pending = new();
+        // A null result means no usable answer (timeout, or a reply that could not be decrypted).
+        private readonly ConcurrentDictionary<string, TaskCompletionSource<IReadOnlyList<YuukoPacket>?>> _pending = new();
 
         private Func<YuukoPacket, Task>? _dataSub;
         private int _disposed;
@@ -111,16 +112,35 @@ namespace YuukoProtocol
             ThrowIfDisposed();
             await StartAsync(ct);
 
+            bool reused = _handshake.TryGetSession(providerId, out _);
             var session = await _handshake.RequestSessionAsync(providerId, ct);
             if (session is null) return Array.Empty<YuukoPacket>();
 
+            var packets = await RequestOnSessionAsync(session, providerId, dataTopic, ct);
+            if (packets is not null) return packets;
+            if (!reused || ct.IsCancellationRequested) return Array.Empty<YuukoPacket>();
+
+            // No usable answer on a session we had cached: the provider most likely restarted and
+            // no longer knows it. Drop it, handshake again and ask once more.
+            _handshake.Forget(providerId, session);
+            session = await _handshake.RequestSessionAsync(providerId, ct);
+            if (session is null) return Array.Empty<YuukoPacket>();
+
+            return await RequestOnSessionAsync(session, providerId, dataTopic, ct)
+                ?? Array.Empty<YuukoPacket>();
+        }
+
+        // Returns null when the provider gave no usable answer.
+        private async Task<IReadOnlyList<YuukoPacket>?> RequestOnSessionAsync(
+            HandshakeSession session, string providerId, string dataTopic, CancellationToken ct)
+        {
             // Borrow one of the session's parallel lanes; this bounds concurrency to the
             // session's lane count while allowing that many requests to a peer at once.
             int lane = await session.AcquireLaneAsync(ct);
             try
             {
                 var requestId = Guid.NewGuid().ToString("N");
-                var tcs = new TaskCompletionSource<IReadOnlyList<YuukoPacket>>(
+                var tcs = new TaskCompletionSource<IReadOnlyList<YuukoPacket>?>(
                     TaskCreationOptions.RunContinuationsAsynchronously);
                 _pending[requestId] = tcs;
 
@@ -131,7 +151,7 @@ namespace YuukoProtocol
 
                     using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
                     timeout.CancelAfter(_opts.RequestTimeout);
-                    using (timeout.Token.Register(() => tcs.TrySetResult(Array.Empty<YuukoPacket>())))
+                    using (timeout.Token.Register(() => tcs.TrySetResult(null)))
                         return await tcs.Task.ConfigureAwait(false);
                 }
                 finally
@@ -181,7 +201,7 @@ namespace YuukoProtocol
         private void OnResponse(DataMessage resp)
         {
             if (!_pending.TryGetValue(resp.RequestId, out var tcs)) return;
-            if (resp.Payload is null) { tcs.TrySetResult(Array.Empty<YuukoPacket>()); return; }
+            if (resp.Payload is null) { tcs.TrySetResult(null); return; }
             if (!_handshake.TryGetSession(resp.FromId, out var session)) return;
 
             try
@@ -191,7 +211,7 @@ namespace YuukoProtocol
             }
             catch
             {
-                tcs.TrySetResult(Array.Empty<YuukoPacket>());
+                tcs.TrySetResult(null);
             }
         }
 
