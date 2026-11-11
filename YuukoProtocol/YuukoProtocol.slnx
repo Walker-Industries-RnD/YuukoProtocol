@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="YuukoProtocol.Definitions/YuukoProtocol.Definitions.csproj" />
   <Project Path="YuukoProtocol/YuukoProtocol.csproj" />
   <Project Path="YuukoSandbox/YuukoSandbox.csproj" />
 </Solution>

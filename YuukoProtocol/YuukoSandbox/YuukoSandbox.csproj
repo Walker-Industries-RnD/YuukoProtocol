@@ -13,4 +13,11 @@
     <ProjectReference Include="..\YuukoProtocol\YuukoProtocol.csproj" />
   </ItemGroup>
 
+  <!-- The self-test models an attacker with a stolen identity, so it calls Pariah (Kyber) directly. -->
+  <ItemGroup>
+    <Reference Include="PariahCybersecurity">
+      <HintPath>..\libs\PariahCybersecurity.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>

@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The shared definitions: the types both Yuuko Protocol and the XRUIOS depend on
+    (Yuuko Bindings, file/directory records, app handles, media resolution).
+
+    - Targets net8.0 so both Yuuko (net8.0) and the XRUIOS (net10.0) can use it.
+    - The namespace stays `YuukoProtocol` so existing `using YuukoProtocol;` lines keep working.
+    - The Pariah / Eclipse DLLs come from ..\libs. That folder is the ONE copy of them for this
+      solution; it mirrors the XRUIOS libs folder (the XRUIOS build of each DLL wins).
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>YuukoProtocol</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BouncyCastle.NetCore" Version="2.2.1" />
+    <PackageReference Include="Ceras" Version="4.1.7" />
+    <PackageReference Include="Data.HashFunction.Blake3" Version="3.1.2" />
+    <PackageReference Include="EasyCompressor.LZ4" Version="2.1.0" />
+    <PackageReference Include="K4os.Compression.LZ4" Version="1.3.8" />
+    <PackageReference Include="Konscious.Security.Cryptography.Argon2" Version="1.3.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="Standart.Hash.xxHash" Version="4.0.5" />
+    <PackageReference Include="System.Data.HashFunction.Interfaces" Version="2.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="PariahCybersecurity">
+      <HintPath>..\libs\PariahCybersecurity.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

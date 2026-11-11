@@ -99,7 +99,6 @@ namespace YuukoProtocol
 
             await manager.LoadBindings();
 
-
             // Nothing has been added yet: there is no bank file to read.
             if (!File.Exists(Path.Combine(DataPath, DataType, "GenericBank.json")))
                 return (new List<DirectoryRecord>(), new List<DirectoryRecord>());

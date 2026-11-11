@@ -17,7 +17,6 @@ namespace YuukoProtocol
         public record PreferredPlatformMapping(string? Mode2D, string? Mode3D, string? ModeCMD);
         public record YuukoApp(Overview YuukoInfo, Dictionary<string, PreferredPlatformMapping> Defaults, List<OSSpecificApp> OSSet, Dictionary<string, List<Event>> OSSpecificEntrypoints, List<Event> SharedEntrypoints);
 
-        public static async Task CreateSign() { }
     }
 
 }

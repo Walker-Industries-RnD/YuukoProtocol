@@ -84,8 +84,50 @@ namespace YuukoProtocol
 
         //I might remove 1.2 functionality and enforce PQC Encryption, IDK yet
 
-        /// <summary>Master switch: enable/disable TLS on all Zenoh links. Default off.</summary>
-        public bool EnableTls { get; set; } = false;
+        /// <summary>
+        /// Master switch: enable/disable TLS on all Zenoh links. <b>Default on.</b> If you give no certificate files,
+        /// <see cref="ZenohBroker.Open"/> checks for this device's Yuuko certificate (<see cref="TlsDirectory"/>) and creates
+        /// one if it is missing (see <see cref="YuukoTls"/>). Turning TLS off also brings back LAN auto-discovery.
+        /// </summary>
+        public bool EnableTls { get; set; } = true;
+
+        /// <summary>
+        /// The Yuuko certificate behind the TLS files in these options. Set by <see cref="YuukoTls.Apply"/> and by
+        /// <see cref="PairingCode.ToTransportOptions"/>; <see cref="ZenohBroker.Certificate"/> reports it, which is how a device
+        /// knows which certificate authority it belongs to (and can take the group's when it pairs).
+        /// </summary>
+        public YuukoCertificate? TlsCertificate { get; set; }
+
+        /// <summary>Name for the automatic certificate (and its folder). Default: this machine's name.</summary>
+        public string? DeviceName { get; set; }
+
+        /// <summary>Where the automatic certificate lives. Default: <see cref="YuukoTls.DefaultDirectory"/>.</summary>
+        public string? TlsDirectory { get; set; }
+
+        /// <summary>
+        /// In peer mode with no <see cref="ListenEndpoints"/>, listen on the first FREE port from 7447 up (and fail loudly if
+        /// there is none) instead of leaving it to chance. Zenoh itself says nothing when a port is already taken: the
+        /// session opens and nobody can reach it. The port actually used is <see cref="ZenohBroker.ListenEndpoints"/>.
+        /// </summary>
+        public bool AutoListen { get; set; } = true;
+
+        /// <summary>A copy, so opening a broker never changes the options object you passed in.</summary>
+        public ZenohBrokerOptions Clone()
+        {
+            var c = new ZenohBrokerOptions
+            {
+                Mode = Mode, GetTimeoutMs = GetTimeoutMs, GetChannelCapacity = GetChannelCapacity, AnswerQueries = AnswerQueries,
+                EnableTls = EnableTls, DeviceName = DeviceName, TlsDirectory = TlsDirectory, AutoListen = AutoListen,
+                TlsCertificate = TlsCertificate, TlsRootCaCertificate = TlsRootCaCertificate,
+                TlsListenCertificate = TlsListenCertificate, TlsListenPrivateKey = TlsListenPrivateKey,
+                TlsConnectCertificate = TlsConnectCertificate, TlsConnectPrivateKey = TlsConnectPrivateKey,
+                TlsEnableMutual = TlsEnableMutual, TlsVerifyNameOnConnect = TlsVerifyNameOnConnect,
+                AllowPlaintextDiscovery = AllowPlaintextDiscovery,
+            };
+            c.ConnectEndpoints.AddRange(ConnectEndpoints);
+            c.ListenEndpoints.AddRange(ListenEndpoints);
+            return c;
+        }
 
         /// <summary>Path to the PEM root CA used to verify the peer's certificate.</summary>
         public string? TlsRootCaCertificate { get; set; }
@@ -102,11 +144,26 @@ namespace YuukoProtocol
         /// <summary>Path to the PEM private key for <see cref="TlsConnectCertificate"/>.</summary>
         public string? TlsConnectPrivateKey { get; set; }
 
-        /// <summary>Require the peer to present a valid certificate (mutual TLS).</summary>
-        public bool TlsEnableMutual { get; set; } = false;
+        /// <summary>
+        /// Require the peer to present a valid certificate (mutual TLS). <b>Default on</b>: a device that cannot show a
+        /// certificate from a CA this device trusts is turned away at the TLS layer, before any Yuuko message is read.
+        /// A device being paired gets in with the temporary certificate in its pairing code.
+        /// </summary>
+        public bool TlsEnableMutual { get; set; } = true;
 
         /// <summary>Verify the peer certificate's name on connect. Off eases self-signed/dev setups.</summary>
         public bool TlsVerifyNameOnConnect { get; set; } = false;
+
+        /// <summary>
+        /// With <see cref="EnableTls"/> on, Zenoh's multicast scouting, gossip, and the default random
+        /// plaintext listener are switched OFF unless this is true. Left on, peers discover each other
+        /// over multicast and dial each other's plain-TCP listeners, which walks around the TLS
+        /// listener (and its client-certificate check) entirely. That was observed in testing: a
+        /// client with no certificate got a plaintext link opened TO it by the provider.
+        /// The price of closing it: with TLS on, devices only link through the explicit
+        /// ConnectEndpoints / ListenEndpoints you give them, so there is no automatic LAN discovery.
+        /// </summary>
+        public bool AllowPlaintextDiscovery { get; set; } = false;
     }
 
     // ── ZenohBroker ──────────────────────────────────────────────────────────
@@ -125,10 +182,37 @@ namespace YuukoProtocol
         private readonly object _declareLock = new();
         private int _disposed;
 
-        private ZenohBroker(Session session, ZenohBrokerOptions opts)
+        private ZenohBroker(Session session, ZenohBrokerOptions opts, YuukoCertificate? certificate)
         {
             _session = session;
             _opts = opts;
+            Certificate = certificate;
+        }
+
+        /// <summary>
+        /// The endpoints this broker listens on, as <c>tcp/host:port</c> (with TLS on, peers reach them over tls automatically).
+        /// If you did not choose one this is the free port that was picked. Empty if this broker only connects out.
+        /// </summary>
+        public IReadOnlyList<string> ListenEndpoints => _opts.ListenEndpoints.ToList();
+
+        /// <summary>The Yuuko certificate in use when it was created or found automatically (null if you supplied your own files or TLS is off).</summary>
+        public YuukoCertificate? Certificate { get; }
+
+        /// <summary>First free TCP port at or above <paramref name="first"/>. Throws if none of the next <paramref name="tries"/> is free.</summary>
+        public static int FindFreePort(int first = 7447, int tries = 20)
+        {
+            for (int p = first; p < first + tries && p <= 65535; p++)
+            {
+                try
+                {
+                    var l = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Any, p);
+                    l.Start();
+                    l.Stop();
+                    return p;
+                }
+                catch (System.Net.Sockets.SocketException) { /* taken: try the next one */ }
+            }
+            throw new InvalidOperationException($"ZenohBroker: no free TCP port between {first} and {first + tries - 1}.");
         }
 
         // ── Factory ──────────────────────────────────────────────────────────
@@ -140,7 +224,35 @@ namespace YuukoProtocol
         /// </summary>
         public static ZenohBroker Open(ZenohBrokerOptions? options = null)
         {
-            options ??= new ZenohBrokerOptions();
+            options = (options ?? new ZenohBrokerOptions()).Clone();   // never change the caller's object
+
+            // TLS on and no certificate files given: find this device's Yuuko certificate, or make it.
+            YuukoCertificate? cert = options.EnableTls ? options.TlsCertificate : null;
+            if (options.EnableTls && cert is null && options.TlsListenCertificate is null && options.TlsConnectCertificate is null && options.TlsRootCaCertificate is null)
+            {
+                string name = string.IsNullOrWhiteSpace(options.DeviceName) ? Environment.MachineName : options.DeviceName!;
+                cert = YuukoTls.EnsureCertificate(options.TlsDirectory ?? YuukoTls.DefaultDirectory(name), name);
+                YuukoTls.Apply(options, cert, options.TlsEnableMutual);
+            }
+
+            // Choose a listening port that is actually free, because Zenoh will not tell us if it is not.
+            if (options.AutoListen && options.Mode == ZenohSessionMode.Peer && options.ListenEndpoints.Count == 0)
+                options.ListenEndpoints.Add("tcp/0.0.0.0:" + FindFreePort());
+
+            // A port someone else holds would not raise an error from Zenoh: the session would open and nobody could reach it.
+            foreach (var ep in options.ListenEndpoints)
+            {
+                var parts = ep.Split('/');
+                if (parts.Length < 2 || parts[0] is not ("tcp" or "tls")) continue;
+                string hostPort = parts[1];
+                int colon = hostPort.LastIndexOf(':');
+                if (colon < 0 || !int.TryParse(hostPort[(colon + 1)..], out int port) || port <= 0) continue;
+                try { var l = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Any, port); l.Start(); l.Stop(); }
+                catch (System.Net.Sockets.SocketException)
+                {
+                    throw new InvalidOperationException($"ZenohBroker: port {port} (from '{ep}') is already in use on this device. Pick another, or leave ListenEndpoints empty to take a free one.");
+                }
+            }
 
             using var config = BuildConfig(options)
                 ?? throw new InvalidOperationException("ZenohBroker: failed to parse generated Zenoh config JSON5.");
@@ -151,7 +263,7 @@ namespace YuukoProtocol
                     $"ZenohBroker: Session.Open failed ({result}). Is the native zenoh-c library installed, " +
                     $"and (in Client mode) is a zenohd router reachable?");
 
-            return new ZenohBroker(session, options);
+            return new ZenohBroker(session, options, cert);
         }
 
         private static Config? BuildConfig(ZenohBrokerOptions o)
@@ -169,9 +281,15 @@ namespace YuukoProtocol
 
             var modeStr = o.Mode == ZenohSessionMode.Client ? "client" : "peer";
 
+            // TLS only protects links that actually use it. Close the plaintext side doors (see
+            // AllowPlaintextDiscovery): no multicast/gossip discovery, and no default plaintext listener.
+            bool lockedToExplicit = o.EnableTls && !o.AllowPlaintextDiscovery;
+
             var json = "{\"mode\":\"" + modeStr + "\"" +
                 (o.ConnectEndpoints.Count > 0 ? ",\"connect\":{\"endpoints\":[" + Arr(o.ConnectEndpoints) + "]}" : "") +
-                (o.ListenEndpoints.Count > 0 ? ",\"listen\":{\"endpoints\":[" + Arr(o.ListenEndpoints) + "]}" : "") +
+                (o.ListenEndpoints.Count > 0 ? ",\"listen\":{\"endpoints\":[" + Arr(o.ListenEndpoints) + "]}"
+                    : lockedToExplicit ? ",\"listen\":{\"endpoints\":[]}" : "") +
+                (lockedToExplicit ? ",\"scouting\":{\"multicast\":{\"enabled\":false},\"gossip\":{\"enabled\":false}}" : "") +
                 BuildTlsBlock(o, J) +
                 "}";
 

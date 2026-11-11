@@ -9,3 +9,5 @@
 /YuukoProtocol/YuukoProtocol/bin
 
 /YuukoProtocol/.zenoh-native/
+/YuukoProtocol/YuukoProtocol.Definitions/bin
+/YuukoProtocol/YuukoProtocol.Definitions/obj

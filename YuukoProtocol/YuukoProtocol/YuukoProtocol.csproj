@@ -21,19 +21,36 @@
     <PackageReference Include="Konscious.Security.Cryptography.Argon2" Version="1.3.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="Standart.Hash.xxHash" Version="4.0.5" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.1" />
     <PackageReference Include="System.Data.HashFunction.Interfaces" Version="2.0.0" />
+    <PackageReference Include="YDotNet" Version="0.6.0" />
+    <PackageReference Include="YDotNet.Extensions" Version="0.6.0" />
+    <PackageReference Include="YDotNet.Native.Linux" Version="0.6.0" />
+    <PackageReference Include="YDotNet.Native.MacOS" Version="0.6.0" />
+    <PackageReference Include="YDotNet.Native.Win32" Version="0.6.0" />
     <PackageReference Include="Zenoh-CS" Version="0.4.1" />
   </ItemGroup>
 
+  <!-- Lets the self-test (YuukoSandbox) call internals, e.g. to model an attacker who holds a stolen long-term key. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="YuukoSandbox" />
+  </ItemGroup>
+
+  <!-- The shared definitions (Yuuko Bindings, records, handles). The XRUIOS depends on the same project. -->
+  <ItemGroup>
+    <ProjectReference Include="..\YuukoProtocol.Definitions\YuukoProtocol.Definitions.csproj" />
+  </ItemGroup>
+
+  <!-- ..\libs is the ONE copy of these DLLs for the whole solution (the XRUIOS build of each). -->
   <ItemGroup>
     <Reference Include="PariahCybersecurity">
-      <HintPath>PariahCybersecurity.dll</HintPath>
+      <HintPath>..\libs\PariahCybersecurity.dll</HintPath>
     </Reference>
     <Reference Include="EclipseLCL">
-      <HintPath>EclipseLCL.dll</HintPath>
+      <HintPath>..\libs\EclipseLCL.dll</HintPath>
     </Reference>
     <Reference Include="EclipseProject">
-      <HintPath>EclipseProject.dll</HintPath>
+      <HintPath>..\libs\EclipseProject.dll</HintPath>
     </Reference>
   </ItemGroup>
 
