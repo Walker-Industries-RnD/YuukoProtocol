@@ -78,17 +78,17 @@ Check these out!
 ## Stages
 
 - [x] Zenoh C# Based API Created
-- [x] Eclipse-Secured Handshake + Per-Peer Encrypted Sessions (Kyber-1024 + AES-256-GCM)
+- [x] Eclipse-Secured Handshake + Per-Peer Encrypted Sessions (Kyber-1024 + Dilithium5 + AES-256-GCM)
 - [x] Multiplexed Lanes (parallel encrypted requests per peer)
-- [ ] Connected Endpoints Handler
-- [ ] CRDT Handler
-- [ ] Operational Transformation Handler
-- [ ] Event Sourcing Handler
-- [ ] Git Style DAG + Keeper Of Tomes
-- [ ] Service Handler
-- [ ] Trust Based Sync Visibility
-- [ ] Easy BLE/Wifi Handling
-- [ ] P2P Mesh (Secure) — secure core done; discovery/replication pending
+- [x] Connected Endpoints Handler
+- [x] CRDT Handler (any size, any number)
+- [x] Operational Transformation Handler
+- [x] Event Sourcing Handler (the audit log, signed and kept by other devices, is the simple version)
+- [x] Git Style DAG + Keeper Of Tomes (any number of files, any size, carries on where it stopped)
+- [x] Service Handler (The Holy Mother: apps)
+- [x] P2P Mesh (Secure): the Cogitarium, strangers with `Nearby`, and paired devices find each other again with `Reconnect`
+- [x] Signed, tamper-evident Audit Log that other devices keep the head of
+
 
 
 
