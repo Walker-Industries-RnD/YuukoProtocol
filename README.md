@@ -25,19 +25,19 @@ Yuuko Protocol is a decentralized protocol created for the XRUIOS; it uses "The 
 
 ---
 
-## Core Features Planned
+## Core Features
 
-- "The Holy Mother", handles creating and managing application streams automatically
-- Nintendo Streetpass style communication between devices, minimal bandwidth and high count support
-- XMPP based notifications 
-- WebRTC + Facade (WIP) Based Interaction And Video Streaming
-- Event Sourcing - Trust and Permissions
-- CRDT System - Realtime UI and States
-- Git Style System - File and Assets
-- AES-256-GCM for request/response payloads  
-- Hard for third-party processes to inject or read traffic  
-- Designed for local-first scenarios (desktop apps ↔ local LLMs ↔ tools ↔ services)  
-- No central server required beyond the machine itself  
+- "The Holy Mother" lists, starts and stops apps on other devices and shares their icons; creating and managing application streams automatically is next
+- Nintendo Streetpass style communication between devices, minimal bandwidth and high count support: **The Cogitarium**. Made for the SCCN: signed streams passed along a mesh of nearby devices, strangers and all
+- WebRTC + Facade (WIP) Based Interaction And Video Streaming (planned)
+- Event Sourcing - Trust and Permissions (planned; the signed, tamper-evident audit log is the simple version and is built
+- CRDT System - Realtime UI and States (built, any size and any number of documents
+- Git Style System - File and Assets (built, any number of files and any size, and it carries on where it stopped
+- AES-256-GCM for request/response payloads
+- Hard for third-party processes to inject or read traffic
+- Designed for local-first scenarios (desktop apps ↔ local LLMs ↔ tools ↔ services)
+- No central server required beyond the machine itself
+
 
 ---
 
@@ -55,21 +55,22 @@ Yuuko Protocol is a decentralized protocol created for the XRUIOS; it uses "The 
 
 ### Measured performance (in-process; excludes network)
 
-| Metric                                 | Result                  |
-| -------------------------------------- | ----------------------- |
-| Post-quantum handshake + first request | ~2.4 ms/peer (one-time) |
-| Warm request round-trip (serial)       | ~54 µs → ~18,500 req/s  |
-| Throughput (concurrent, 8–32 lanes)    | ~33–40k req/s           |
-| Raw AES-256-GCM enc+dec (256 B)        | 3.6 µs/op → ~280k op/s  |
-|                                        |                         |
+| Metric                                    | Result                 |
+| ----------------------------------------- | ---------------------- |
+| Post-quantum handshake + first request    | ~5 ms/peer (one-time)  |
+| Warm request round-trip (serial)          | ~40 µs → ~24,700 req/s |
+| Throughput (concurrent, 8–32 lanes)       | ~35–36k req/s          |
+| Command carrying 1 MB, echoed back        | ~21 ms                 |
+| Edit on one device until the other has it | ~2.6 ms                |
+| Raw AES-256-GCM enc+dec (64 KB)           | ~233 µs/op → ~280 MB/s |
 
 ## Requirements
 
-The following (Free, Open Source Solutions on our Github) libraries are required for this to workl
+- The .NET 8 SDK
+- [Pariah Cybersecurity](https://github.com/Walker-Industries-RnD/PariahCybersecurity), which is free and open source on our Github. Its DLL and the Eclipse ones it works with are in the `libs` folder of the repo, so there is nothing to install
+- Zenoh's native library, which the build downloads for you the first time (about 15 MB)
 
-[- Pariah Cybersecurity ](https://github.com/Walker-Industries-RnD/PariahCybersecurity)
-[- Secure Store ](https://github.com/Walker-Industries-RnD/Secure-Store/tree/main)
-
+[Secure Store](https://github.com/Walker-Industries-RnD/Secure-Store/tree/main) is no longer needed.
 
 Check these out!
 
@@ -94,13 +95,15 @@ Check these out!
 
 ## Security (Implemented)
 
-Built and benchmarked — see [[1 - System Design]] for numbers (~2.4 ms post-quantum handshake, then ~54 µs warm request round-trips; the crypto is effectively free).
+Built and benchmarked: see [[6 - Speed and Numbers]] for the speed (~5 ms post-quantum handshake, then ~40 µs warm request round-trips; the crypto is effectively free) and [[1 - Security Overview]] for what it does and doesn't protect.
 
-- **Enrollment** → registers client ID + PSK  
-- **Handshake** → Kyber-encrypted key exchange → shared secret  
-- **Session** → AES-256-GCM + per-message nonces  
-- **Transcript** → HMAC-protected log of handshake messages → prevents downgrade & MITM  
+- **Pairing** → one device shows a code (its address, a one-time token and a temporary certificate), the other types it, and each pins the other's keys
+- **Handshake** → Kyber-1024 key exchange with a throw-away key for every handshake (so a stolen identity can't open an old recording), the provider proves who it is by signing the whole exchange with Dilithium5, and the group key is mixed in ([[2 - The Group Key]])
+- **Session** → AES-256-GCM + per-message nonces, replaced after an hour
+- **Link** → TLS 1.3 with certificates both ways under all of it ([[3 - TLS and the Link]])
+- **Everything saved** → encrypted (identity file, device list, reconnect file), and a wrong password or a damaged file is an error, never a quiet fresh start
 - Designed to resist classical & quantum adversaries (where Kyber helps)
+
 
 ---
 
