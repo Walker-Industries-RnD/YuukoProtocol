@@ -10,19 +10,19 @@ namespace YuukoProtocol
 
     public interface IYuukoApi
     {
-        /// <summary>Push a packet to all subscribers of <paramref name="topic"/>.</summary>
+        //Push a packet to all subscribers of topic.
         Task PublishAsync(string topic, YuukoPacket packet, CancellationToken ct = default);
 
-        /// <summary>Pull-style: returns all currently stored (non-ephemeral) packets on <paramref name="topic"/>.</summary>
+        //Pull-style: returns all currently stored (non-ephemeral) packets on topic.
         Task<IReadOnlyList<YuukoPacket>> RequestAsync(string topic, CancellationToken ct = default);
 
-        /// <summary>Register a callback that fires each time a packet arrives on <paramref name="topic"/>.</summary>
+        //Register a callback that fires each time a packet arrives on topic.
         Task SubscribeAsync(string topic, Func<YuukoPacket, Task> handler, CancellationToken ct = default);
 
-        /// <summary>Remove a previously registered handler from <paramref name="topic"/>.</summary>
+        //Remove a previously registered handler from topic.
         Task UnsubscribeAsync(string topic, Func<YuukoPacket, Task> handler, CancellationToken ct = default);
 
-        /// <summary>Publish a tombstone (delete signal) for a named packet.</summary>
+        //Publish a tombstone (delete signal) for a named packet.
         Task TombstoneAsync(string topic, string name, CancellationToken ct = default) =>
             PublishAsync(topic, YuukoPacket.Tombstone(name), ct);
     }

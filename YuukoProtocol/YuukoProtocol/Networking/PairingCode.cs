@@ -28,13 +28,13 @@ namespace YuukoProtocol
         private const int TokenBytes = 16;
 
         public string DeviceId { get; }
-        /// <summary>The offering device's key fingerprint (64 hex characters).</summary>
+        //The offering device's key fingerprint (64 hex characters).
         public string Fingerprint { get; }
-        /// <summary>Where to connect, e.g. <c>tcp/192.168.1.5:7447</c>. Null if the offering device can be found another way (LAN discovery with TLS off).</summary>
+        //Where to connect, e.g. tcp/192.168.1.5:7447. Null if the offering device can be found another way (LAN discovery with TLS off).
         public string? Endpoint { get; }
-        /// <summary>The offering device's TLS CA certificate (PEM), if its link uses TLS.</summary>
+        //The offering device's TLS CA certificate (PEM), if its link uses TLS.
         public string? CaCertificatePem { get; }
-        /// <summary>A short-lived TLS client certificate issued for this one newcomer, so it can get through the offering device's mutual TLS. Part of the secret.</summary>
+        //A short-lived TLS client certificate issued for this one newcomer, so it can get through the offering device's mutual TLS. Part of the secret.
         public string? BootstrapCertificatePem { get; }
         internal string? BootstrapPrivateKeyPem { get; }
         internal byte[] Token { get; }
@@ -63,7 +63,7 @@ namespace YuukoProtocol
             ExpiresUtc = expiresUtc;
         }
 
-        /// <summary>The text to show or turn into a QR code. Treat it like a password until it has been used.</summary>
+        //The text to show or turn into a QR code. Treat it like a password until it has been used.
         public string Encode() => EncodeCore(CaCertificatePem is null ? Array.Empty<byte>() : PemToDer(CaCertificatePem));
 
         // The certificate bytes are a parameter only so the self-test can make a code with a VALID checksum and a broken certificate.
@@ -106,7 +106,7 @@ namespace YuukoProtocol
         public static PairingCode Parse(string text) =>
             TryParse(text, out var code, out var error) ? code! : throw new FormatException(error);
 
-        /// <summary>Reads a code typed or scanned by a person. Forgives spaces, dashes, lower case and O/0, I/L/1 mix-ups; refuses anything damaged.</summary>
+        //Reads a code typed or scanned by a person. Forgives spaces, dashes, lower case and O/0, I/L/1 mix-ups; refuses anything damaged.
         public static bool TryParse(string? text, out PairingCode? code, out string? error)
         {
             code = null; error = null;
@@ -161,11 +161,9 @@ namespace YuukoProtocol
             }
         }
 
-        /// <summary>
-        /// Transport settings for a device that is about to join using this code: connects to the code's address and trusts
-        /// the code's TLS certificate. Creates this device's own certificate first if it has none. Open the transport
-        /// with the result, then call <see cref="EclipseBroker.PairWithAsync"/>.
-        /// </summary>
+        //Transport settings for a device that is about to join using this code: connects to the code's address and trusts
+        //the code's TLS certificate. Creates this device's own certificate first if it has none. Open the transport
+        //with the result, then call PairWithAsync.
         public ZenohBrokerOptions ToTransportOptions(string? deviceName = null, string? tlsDirectory = null)
         {
             var o = new ZenohBrokerOptions { DeviceName = deviceName, TlsDirectory = tlsDirectory };

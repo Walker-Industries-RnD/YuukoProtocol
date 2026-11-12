@@ -27,7 +27,7 @@ namespace YuukoSandbox
         public const string XRUIOSEvents = "yuuko/xruios/events";
         public const string XRUIOSSync = "yuuko/xruios/sync";
 
-        // ── Walker Gateway ───────────────────────────────────────────────────
+        // ── Gateway ───────────────────────────────────────────────────
         public const string GatewayMesh = "yuuko/gateway/mesh";
         public const string GatewayPeers = "yuuko/gateway/peers";
 

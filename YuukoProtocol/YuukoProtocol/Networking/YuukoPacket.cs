@@ -10,7 +10,7 @@ using System.Text.Json.Serialization;
 
 namespace YuukoProtocol
 {
-    // ── Payload type ─────────────────────────────────────────────────────────
+    //Payload type
 
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum PayloadType
@@ -23,7 +23,7 @@ namespace YuukoProtocol
 
 
 
-    // ── Packet flags ──────────────────────────────────────────────────────────
+    //Packet flags
 
     public static class YuukoFlags
     {
@@ -36,7 +36,7 @@ namespace YuukoProtocol
         public const string Partial      = "partial";
     }
 
-    // ── YuukoPacket ───────────────────────────────────────────────────────────
+    //YuukoPacket
 
 
     public sealed class YuukoPacket
@@ -53,14 +53,14 @@ namespace YuukoProtocol
         [JsonPropertyName("flags")]
         public List<string> Flags { get; init; } = new();
 
-        // ── Helpers ───────────────────────────────────────────────────────────
+        //Helpers
 
         public bool IsTombstone  => Flags.Contains(YuukoFlags.Tombstone);
         public bool IsEphemeral  => Flags.Contains(YuukoFlags.Ephemeral);
         public bool IsCompressed => Flags.Contains(YuukoFlags.Compressed);
         public bool IsSigned     => Flags.Contains(YuukoFlags.Signed);
 
-        // ── Factories ─────────────────────────────────────────────────────────
+        //Factories
 
         public static YuukoPacket FromString(string name, string json) =>
             new() { Name = name, Type = PayloadType.Json, Data = Encoding.UTF8.GetBytes(json) };
@@ -74,7 +74,7 @@ namespace YuukoProtocol
         public static YuukoPacket Ephemeral(string name, byte[] data) =>
             new() { Name = name, Type = PayloadType.Bytes, Data = data, Flags = { YuukoFlags.Ephemeral } };
 
-        // ── Serialisation ─────────────────────────────────────────────────────
+        //Serialisation
 
         public string ToJson() => JsonSerializer.Serialize(this, YuukoJson.Options);
 
@@ -87,7 +87,7 @@ namespace YuukoProtocol
             $"YuukoPacket {{ Name={Name}, Type={Type}, DataLen={Data.Length}, Flags=[{string.Join(",", Flags)}] }}";
     }
 
-    // ── JSON options singleton ────────────────────────────────────────────────
+    //JSON options singleton
 
     internal static class YuukoJson
     {

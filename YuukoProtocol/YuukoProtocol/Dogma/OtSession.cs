@@ -22,6 +22,8 @@
 // returns). There is no election of a new owner. Only devices that are paired and connected to the owner take part. Every device that
 // joins can read the whole document; who may write can be limited with `writers` in Create.
 
+//Had some machine help with making this
+
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
@@ -87,7 +89,7 @@ namespace YuukoProtocol.Dogma
         //This device's text was replaced by the owner's (it fell too far behind, or an edit was rejected). Edits that were not confirmed are gone.
         public event Action<string>? Resynced;
 
-        // ── editing ──────────────────────────────────────────────────────────────
+        //Editing
 
         //Make an edit built against the current Text. Throws OtException if it does not fit.
         public void Apply(TextOperation operation) => Session.LocalEdit(this, _ => operation);
@@ -166,7 +168,7 @@ namespace YuukoProtocol.Dogma
 
         public OtDocument? Get(string id) => _docs.TryGetValue(id, out var d) ? d : null;
 
-        // ── creating and joining ─────────────────────────────────────────────────
+        //Creating and joining
 
         //Starts a document that THIS device owns: it puts everyone's edits in order. Only devices in writers may edit
         //(null = any device connected to this one); the owner always may.
@@ -225,7 +227,7 @@ namespace YuukoProtocol.Dogma
             if (_docs.TryRemove(id, out var d)) d.Closed = true;
         }
 
-        // ── editing (called by OtDocument) ───────────────────────────────────────
+        //Editing (called by OtDocument)
 
         internal void LocalEdit(OtDocument d, Func<string, TextOperation> build)
         {
@@ -268,7 +270,7 @@ namespace YuukoProtocol.Dogma
             foreach (var k in d.MetaByRevision.Keys.Where(k => k < oldest).ToList()) d.MetaByRevision.Remove(k);
         }
 
-        // ── owner side: commands from other devices ──────────────────────────────
+        //Owner side: commands from other devices
 
         private CommandResult HandleJoin(CommandContext ctx)
         {
@@ -405,7 +407,7 @@ namespace YuukoProtocol.Dogma
             }
         }
 
-        // ── member side: edits arriving from the owner ───────────────────────────
+        //Member side: edits arriving from the owner
 
         private CommandResult HandleApply(CommandContext ctx)
         {
@@ -488,7 +490,7 @@ namespace YuukoProtocol.Dogma
             catch (OtException) { return false; }
         }
 
-        // ── catching up ──────────────────────────────────────────────────────────
+        //Catching up
 
         private async Task FetchAsync(OtDocument d, CancellationToken ct)
         {
@@ -569,7 +571,7 @@ namespace YuukoProtocol.Dogma
             }
         }
 
-        // ── sending our edits to the owner ───────────────────────────────────────
+        //Sending our edits to the owner
 
         // Safe to call with or without the gate held (it is re-entrant). Starts the sender if an edit is waiting and none is running.
         private void EnsurePump(OtDocument d)
@@ -645,7 +647,7 @@ namespace YuukoProtocol.Dogma
             }
         }
 
-        // ── small helpers ────────────────────────────────────────────────────────
+        //Small helpers
 
         // The properties of one accepted edit: where it sits in the order, who made it, and the edit itself.
         private static void WriteOpProperties(Utf8JsonWriter w, int rev, Meta meta, TextOperation op, string? docId)

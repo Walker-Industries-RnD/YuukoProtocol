@@ -1,401 +1,319 @@
-using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Nodes;
+using WISecureData;
 using YuukoProtocol;
+using YuukoProtocol.Dogma;
 
 namespace YuukoSandbox;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Self-test for the secure core. Everything runs in-process over LocalBroker, so it needs
-// no network and no native zenoh-c:
-//
-//     dotnet run --project YuukoSandbox -- selftest
-//
-// It checks the things that should work AND the attacks that should fail. A "PASS" next to an
-// attack means the attack was refused. Exit code is 0 only if everything passed.
-//
-// Tests are grouped by feature; each group is a method below. To add one, copy a Check(...) line.
-// ─────────────────────────────────────────────────────────────────────────────
-public static partial class SelfTest
+//The checks for the most important parts, all in one program (No network needed)
+//dotnet run --project YuukoSandbox -- selftest
+public static class SelfTest
 {
-    private static int _failures;
-    private static int _checks;
+    static int Failed, Total;
 
-    private static void Check(string name, bool ok)
+    static void Check(string Name, bool Ok)
     {
-        _checks++;
-        Console.WriteLine($"[{(ok ? "PASS" : "FAIL")}] {name}");
-        if (!ok) _failures++;
+        Total++;
+        if (!Ok) Failed++;
+        Console.WriteLine($"[{(Ok ? "PASS" : "FAIL")}] {Name}");
     }
 
-    private static void Section(string title) => Console.WriteLine($"\n-- {title}");
+    static async Task<bool> Eventually(Func<bool> Condition, int Ms = 5000)
+    {
+        var Until = DateTime.UtcNow.AddMilliseconds(Ms);
+        while (DateTime.UtcNow < Until)
+        {
+            if (Condition()) return true;
+            await Task.Delay(20);
+        }
+        return Condition();
+    }
+
+    static async Task<bool> Throws(Func<Task> Work)
+    {
+        try { await Work(); return false; }
+        catch { return true; }
+    }
+
+    static byte[] Bytes(int Length, int Seed)
+    {
+        var Data = new byte[Length];
+        new Random(Seed).NextBytes(Data);
+        return Data;
+    }
+
+    static string Folder(string Name)
+    {
+        var Path_ = Path.Combine(Path.GetTempPath(), "yuuko-test-" + Guid.NewGuid().ToString("N")[..8], Name);
+        Directory.CreateDirectory(Path_);
+        return Path_;
+    }
+
+    //Devices that know each other by name and key, but only talk over the links given
+    static async Task<Dictionary<string, EclipseBroker>> Group(LocalBroker Bus, string[] Names, (string, string)[] Links)
+    {
+        var Ids = Names.ToDictionary(n => n, n => YuukoIdentity.Create(n));
+        var Nodes = new Dictionary<string, EclipseBroker>();
+
+        foreach (var Name in Names)
+        {
+            var Options = new EclipseBrokerOptions { CommandTimeout = TimeSpan.FromSeconds(3), RequestTimeout = TimeSpan.FromSeconds(3) };
+
+            foreach (var (A, B) in Links)
+            {
+                var Other = A == Name ? B : B == Name ? A : null;
+                if (Other is null) continue;
+                Options.Handshake.TrustDevice(Other, Ids[Other].Fingerprint);
+                Options.TrustOrigin(Other, Ids[Other].Fingerprint);
+            }
+
+            Nodes[Name] = EclipseBroker.Create(Bus, Ids[Name], Options);
+            await Nodes[Name].StartAsync();
+        }
+
+        foreach (var (A, B) in Links) await Nodes[A].PingAsync(B);
+        return Nodes;
+    }
 
     public static async Task<int> RunAsync()
     {
-        Console.WriteLine("== YuukoProtocol self-test (in-process LocalBroker) ==");
-        var sw = Stopwatch.StartNew();
+        await Connecting();
+        await Documents();
+        await Folders();
+        await Streams();
+        await AuditLogs();
 
-        await Identity();
-        await Allowlist();
-        await PreSharedKey();
-        await ProviderAuthentication();
-        await HandshakeAbuse();
-        await Peers();
-        await Kicking();
-        await Commands();
-        await Relay();
-        TlsCertificates();
-        TlsGroups();
-        PairingCodes();
-        await Pairing();
-        await PairingWithTls();
-        await GroupChanges();
-        await SessionHealing();
-        await Presence();
-        await DeviceDirectoryTests();
-        await DeviceDirectoryFile();
-        await AuditLogTests();
-        OtAlgebra();
-        OtServerAndClient();
-        await OtNetworkTests();
-        await CrdtTests();
-        await HolyMotherTests();
-        await HolyIconTests();
-        await DagTests();
-        await CogitariumTests();
-        await NearbyTests();
-        await ForwardSecrecy();
-        await TamperedThrowAwayKey();
-        await IdentityAtRest();
-        await Rotation();
-        await Regression();
-
-        Console.WriteLine(_failures == 0
-            ? $"\nALL PASS ({_checks} checks, {sw.Elapsed.TotalSeconds:F1}s)"
-            : $"\n{_failures} FAILED of {_checks} ({sw.Elapsed.TotalSeconds:F1}s)");
-        return _failures == 0 ? 0 : 1;
+        Console.WriteLine(Failed == 0 ? $"\nALL PASS ({Total} checks)" : $"\n{Failed} FAILED of {Total}");
+        return Failed;
     }
 
-    // ── helpers ──────────────────────────────────────────────────────────────
+    #region Connecting
 
-    private static HandshakeOptions Opts(Action<HandshakeOptions>? f = null)
+    static async Task Connecting()
     {
-        var o = new HandshakeOptions { Timeout = TimeSpan.FromSeconds(3) };
-        f?.Invoke(o);
-        return o;
-    }
+        Console.WriteLine("\n-- connecting");
+        using var Bus = new LocalBroker();
+        var N = await Group(Bus, new[] { "pc", "phone", "tablet" }, new[] { ("pc", "phone") });
+        N["phone"].On("echo", (c, _) => Task.FromResult(CommandResult.Ok(c.Payload)));
 
-    // Did a session come back, and how long did it take? (A refusal should be near-instant.)
-    private static async Task<(bool ok, long ms)> TryConnect(IYuukoApi t, YuukoIdentity id, HandshakeOptions o, string provider)
-    {
-        var sw = Stopwatch.StartNew();
-        using var h = new YuukoHandshake(t, id, o);
-        var s = await h.RequestSessionAsync(provider);
-        return (s is not null, sw.ElapsedMilliseconds);
-    }
+        var Sent = Bytes(1000, 1);
+        var Ack = await N["pc"].SendCommandAsync("phone", "echo", Sent);
+        Check("a command is answered by the other device", Ack.IsOk && Ack.Result.SequenceEqual(Sent));
+        Check("a command nobody answers says so", (await N["pc"].SendCommandAsync("phone", "nothing")).Status == AckStatus.UnknownCommand);
+        Check("a device that isn't paired is refused", !(await N["tablet"].PingAsync("pc")).IsOk);
 
-    private static async Task<YuukoHandshake> StartProvider(IYuukoApi t, YuukoIdentity id, HandshakeOptions o)
-    {
-        var p = new YuukoHandshake(t, id, o);
-        await p.StartAsync();
-        return p;
-    }
-
-    /// <summary>
-    /// A transport wrapper for staging attacks. Every packet published through it is recorded, and
-    /// <see cref="OnPublish"/> may drop it (return null) or swap in a changed copy.
-    /// </summary>
-    private sealed class Tap : IYuukoApi
-    {
-        private readonly IYuukoApi _inner;
-        public Func<string, YuukoPacket, YuukoPacket?>? OnPublish;
-        public readonly ConcurrentQueue<string> Seen = new();
-
-        public Tap(IYuukoApi inner) => _inner = inner;
-
-        public Task PublishAsync(string topic, YuukoPacket packet, CancellationToken ct = default)
+        //The group key is the same on every device or they don't connect
+        using var Bus2 = new LocalBroker();
+        EclipseBroker Open(string Name, string Key)
         {
-            Seen.Enqueue(Encoding.UTF8.GetString(packet.Data));
-            if (OnPublish is null) return _inner.PublishAsync(topic, packet, ct);
-            var changed = OnPublish(topic, packet);
-            return changed is null ? Task.CompletedTask : _inner.PublishAsync(topic, changed, ct);
+            var Options = new EclipseBrokerOptions { RequestTimeout = TimeSpan.FromSeconds(2), CommandTimeout = TimeSpan.FromSeconds(2) };
+            Options.Handshake.PreSharedKey = Encoding.UTF8.GetBytes(Key);
+            Options.Handshake.RequirePreSharedKey = true;
+            return EclipseBroker.Create(Bus2, YuukoIdentity.Create(Name), Options);
         }
 
-        public Task<IReadOnlyList<YuukoPacket>> RequestAsync(string topic, CancellationToken ct = default) => _inner.RequestAsync(topic, ct);
-        public Task SubscribeAsync(string topic, Func<YuukoPacket, Task> handler, CancellationToken ct = default) => _inner.SubscribeAsync(topic, handler, ct);
-        public Task UnsubscribeAsync(string topic, Func<YuukoPacket, Task> handler, CancellationToken ct = default) => _inner.UnsubscribeAsync(topic, handler, ct);
+        using var One = Open("one", "the-group-key-1234"); using var Same = Open("same", "the-group-key-1234"); using var Other = Open("other", "another-group-key-9");
+        await One.StartAsync();
+        Check("devices with the same group key connect", (await Same.PingAsync("one")).IsOk);
+        Check("a device with another group key doesn't", !(await Other.PingAsync("one")).IsOk);
     }
 
-    // The wire format is plain JSON, so an attacker's edit is just a JSON edit.
-    private static YuukoPacket Edit(YuukoPacket p, Action<JsonObject> change)
+    #endregion
+
+    #region Documents
+
+    static async Task Documents()
     {
-        var obj = JsonNode.Parse(p.Data)!.AsObject();
-        change(obj);
-        return YuukoPacket.Ephemeral(p.Name, Encoding.UTF8.GetBytes(obj.ToJsonString()));
+        Console.WriteLine("\n-- shared documents");
+        using var Bus = new LocalBroker();
+        var N = await Group(Bus, new[] { "a", "b" }, new[] { ("a", "b") });
+        using var A = new DocSync(N["a"]); using var B = new DocSync(N["b"]);
+        A.AntiEntropyInterval = B.AntiEntropyInterval = TimeSpan.Zero;
+
+        var Doc = new SimpleCRDT.SharedDocs("a", "Shopping list", DateTime.UtcNow, null);
+        Doc.CreateLabel("items", "milk\n");
+        await A.ShareAsync(Doc);
+        Check("a shared document arrives on the other device", await Eventually(() => B.Docs.ContainsKey(Doc.UUID)));
+
+        var Copy = B.Docs[Doc.UUID];
+        await Task.WhenAll(Task.Run(() => Doc.AddToLabel("items", "eggs\n")), Task.Run(() => Copy.AddToLabel("items", "bread\n")));
+        Check("two edits at the same time end up the same on both, and nothing is lost",
+            await Eventually(() => Doc.ReadLabel("items") == Copy.ReadLabel("items") && new[] { "milk", "eggs", "bread" }.All(Doc.ReadLabel("items").Contains)));
+
+        Check("only the device that made a document can remove it", await Throws(() => B.RemoveAsync(Doc.UUID)));
+        await A.RemoveAsync(Doc.UUID);
+        Check("a removed document goes from every device", await Eventually(() => !B.Docs.ContainsKey(Doc.UUID)));
+
+        var Big = new SimpleCRDT.SharedDocs("a", "Big", DateTime.UtcNow, null);
+        Big.CreateLabel("text", new string('x', 1_500_000) + Convert.ToBase64String(Bytes(750_000, 2)));
+        await A.ShareAsync(Big);
+        Check("a document of 3 MB arrives whole (it is sent in pieces)", await Eventually(() => B.Docs.TryGetValue(Big.UUID, out var D) && D.ContentHash == Big.ContentHash, 60000));
+
+        var Empty = new SimpleCRDT.SharedDocs("a", "Empty", DateTime.UtcNow, null);
+        Empty.CreateLabel("text", "");
+        Check("a document with no text is fine", Empty.ReadLabel("text") == "");
     }
 
-    // HandshakeType numbers on the wire.
-    private const int Hello = 0, Challenge = 1, Response = 2, Accept = 3, Reject = 4;
+    #endregion
 
-    private static int HandshakeTypeOf(YuukoPacket p) => JsonNode.Parse(p.Data)!["Type"]!.GetValue<int>();
+    #region Folders
 
-    private static string FlipFirstByte(string base64)
+    static bool Same(string A, string B)
     {
-        var b = Convert.FromBase64String(base64);
-        b[0] ^= 0xFF;
-        return Convert.ToBase64String(b);
+        Dictionary<string, string> Look(string Root) => Directory.EnumerateFiles(Root, "*", SearchOption.AllDirectories)
+            .Where(f => !Path.GetRelativePath(Root, f).StartsWith(".yuuko"))
+            .ToDictionary(f => Path.GetRelativePath(Root, f), f => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(f))));
+
+        var X = Look(A); var Y = Look(B);
+        return X.Count == Y.Count && X.All(p => Y.TryGetValue(p.Key, out var H) && H == p.Value);
     }
 
-    // ── identity ─────────────────────────────────────────────────────────────
-
-    private static async Task Identity()
+    static async Task Folders()
     {
-        Section("identity");
-        var alice = YuukoIdentity.Create("alice");
-        Check("fingerprint is 64 lowercase hex chars", alice.Fingerprint.Length == 64 && alice.Fingerprint.All(Uri.IsHexDigit) && alice.Fingerprint == alice.Fingerprint.ToLowerInvariant());
-        Check("fingerprint matches the exported public keys", YuukoIdentity.FingerprintOf(alice.ExportPublicKeys()) == alice.Fingerprint);
-        Check("two identities have different fingerprints", YuukoIdentity.Create("alice").Fingerprint != alice.Fingerprint);
+        Console.WriteLine("\n-- folder sync");
+        var Root = Folder("dag");
+        string ADir = Path.Combine(Root, "a"), BDir = Path.Combine(Root, "b");
+        Directory.CreateDirectory(Path.Combine(ADir, "notes"));
+        File.WriteAllText(Path.Combine(ADir, "readme.txt"), "hello");
+        File.WriteAllText(Path.Combine(ADir, "notes", "one.txt"), "one");
+        File.WriteAllBytes(Path.Combine(ADir, "big.bin"), Bytes(700_000, 3));
 
-        var restored = YuukoIdentity.Import(alice.Export());
-        Check("export/import keeps ClientId + fingerprint", restored.ClientId == "alice" && restored.Fingerprint == alice.Fingerprint);
+        using var Bus = new LocalBroker();
+        var N = await Group(Bus, new[] { "a", "b" }, new[] { ("a", "b") });
+        var A = new DAG.Syncer(N["a"], null); var B = new DAG.Syncer(N["b"], null);
 
-        var file = Path.Combine(Path.GetTempPath(), "yuuko-selftest-" + Guid.NewGuid().ToString("N") + ".id");
         try
         {
-            var first = YuukoIdentity.LoadOrCreate(file, "dev-1");
-            var second = YuukoIdentity.LoadOrCreate(file, "dev-1");
-            Check("LoadOrCreate returns the SAME identity on the second call", first.Fingerprint == second.Fingerprint);
-            bool refused = false;
-            try { YuukoIdentity.LoadOrCreate(file, "someone-else"); } catch (InvalidOperationException) { refused = true; }
-            Check("LoadOrCreate refuses to silently switch ClientId", refused);
-        }
-        finally { File.Delete(file); }
+            var Shared = await A.Share(ADir, new List<string> { "b" });
+            await B.Join(Shared.UUID, BDir, new List<string> { "a" });
 
-        // Splice halves from two identities together: each of these must be caught on import.
-        var a = JsonNode.Parse(YuukoIdentity.Create("a").Export())!;
-        var b = JsonNode.Parse(YuukoIdentity.Create("b").Export())!;
-        var swapKyber = JsonNode.Parse(a.ToJsonString())!; swapKyber["KyberPrivate"] = b["KyberPrivate"]!.DeepClone();
-        var swapSigning = JsonNode.Parse(a.ToJsonString())!; swapSigning["SigningPrivate"] = b["SigningPrivate"]!.DeepClone();
-        Check("Import rejects a Kyber public/private mismatch", ImportFails(swapKyber.ToJsonString()));
-        Check("Import rejects a signing public/private mismatch", ImportFails(swapSigning.ToJsonString()));
-        Check("Import rejects garbage", ImportFails("not json"));
-        var v1 = JsonNode.Parse(a.ToJsonString())!; v1["Version"] = 1;
-        Check("Import explains an old (v1) identity file instead of loading it", ImportFails(v1.ToJsonString(), "older version"));
+            var First = await B.Sync("a", Shared.UUID);
+            Check("a new folder arrives whole", First.Downloaded == 3 && First.Errors.Count == 0 && Same(ADir, BDir));
+
+            File.WriteAllText(Path.Combine(ADir, "readme.txt"), "hello again");
+            File.SetLastWriteTimeUtc(Path.Combine(ADir, "readme.txt"), DateTime.UtcNow.AddMinutes(1));
+            File.Delete(Path.Combine(ADir, "notes", "one.txt"));
+            var Second = await B.Sync("a", Shared.UUID);
+            Check("a change and a delete arrive", Second.Downloaded == 1 && Second.Deleted == 1 && Same(ADir, BDir));
+            Check("syncing again changes nothing", (await B.Sync("a", Shared.UUID)).AlreadyInSync);
+
+            Check("a path that climbs out of the folder is refused", !DAG.SafeRelative("../x") && !DAG.SafeRelative("/etc/x") && !DAG.SafeRelative(".yuuko/x"));
+
+            //A file that can't be written stops that file, not the sync, and the developer pushes it on
+            File.WriteAllBytes(Path.Combine(ADir, "late.bin"), Bytes(300_000, 4));
+            string Hash = DAG.Scan(ADir, null)["late.bin"].Hash;
+            Directory.CreateDirectory(Path.Combine(BDir, ".yuuko", "partial"));
+            var Held = new FileStream(Path.Combine(BDir, ".yuuko", "partial", Hash), FileMode.Create, FileAccess.Write, FileShare.None);
+
+            var Stopped = await B.Sync("a", Shared.UUID);
+            Check("a file that can't be written is reported and the sync goes on", Stopped.Errors.Count == 1 && !File.Exists(Path.Combine(BDir, "late.bin")));
+
+            Held.Dispose();
+            var Pushed = await B.Resume("a", Shared.UUID, 3);
+            Check("syncing again (ResumeFolder) finishes it", Pushed.Errors.Count == 0 && Same(ADir, BDir));
+        }
+        finally
+        {
+            A.Dispose(); B.Dispose();
+            foreach (var Node in N.Values) Node.Dispose();
+        }
+    }
+
+    #endregion
+
+    #region Streams
+
+    static async Task Streams()
+    {
+        Console.WriteLine("\n-- streams (The Cogitarium)");
+        using var Bus = new LocalBroker();
+
+        //The source only talks to the middle one, who passes it on. x is no mesh, it just talks
+        var N = await Group(Bus, new[] { "s", "m", "r", "x" }, new[] { ("s", "m"), ("m", "r"), ("m", "x") });
+        var S = new Cogitarium.Mesh(N["s"]); var M = new Cogitarium.Mesh(N["m"]); var R = new Cogitarium.Mesh(N["r"]);
+        var Got = new List<byte[]>();
+        R.SegmentReceived += (Info, Piece) => { lock (Got) Got.Add(Piece.Data); };
+
+        try
+        {
+            foreach (var Mesh in new[] { S, M, R }) Mesh.JoinChunk("room");
+            M.AcceptSource(S.MyFingerprint);
+            R.AcceptSource(S.MyFingerprint);
+            await Eventually(() => S.Neighbors("room").Count == 1 && M.Neighbors("room").Count == 2);
+
+            var Stream = S.StartStream("room", "Cafe");
+            Check("a stream is announced to devices that accepted its source, through the middle one", await Eventually(() => R.Streams().Count == 1));
+
+            var Piece = Bytes(5000, 5);
+            await Stream.Send(Piece, Cogitarium.Full);
+            Check("a piece reaches a device the source isn't connected to, unchanged", await Eventually(() => Got.Count == 1) && Got[0].SequenceEqual(Piece));
+
+            await Task.Delay(300);
+            Check("...once", Got.Count == 1);
+
+            //A device passing on a piece that isn't what the source signed
+            await N["x"].SendCommandAsync("m", "sccn.hello", Encoding.UTF8.GetBytes(new JsonObject { ["c"] = new JsonObject { ["room"] = 31 } }.ToJsonString()));
+            var Header = new JsonObject { ["id"] = M.Streams()[0].ID, ["seq"] = 9, ["lv"] = 0, ["h"] = 0, ["m"] = "", ["sig"] = Convert.ToBase64String(Bytes(64, 6)) };
+            await N["x"].SendCommandAsync("m", "sccn.segment", Cogitarium.Mesh.Frame(Header, Bytes(100, 7)));
+            Check("a piece with a signature that isn't the source's is refused, and the device that sent it is distrusted", M.IsDistrusted("x") && !M.IsDistrusted("s"));
+        }
+        finally
+        {
+            S.Dispose(); M.Dispose(); R.Dispose();
+            foreach (var Node in N.Values) Node.Dispose();
+        }
+    }
+
+    #endregion
+
+    #region Audit logs
+
+    static async Task AuditLogs()
+    {
+        Console.WriteLine("\n-- audit log");
+        var Dir = Folder("audit");
+        var Key = new SecureData(Encoding.UTF8.GetBytes("audit file key 123"));
+        string File_ = Path.Combine(Dir, "a.log");
+
+        using (var Log = AuditLog.Open(File_, Key))
+        {
+            Log.Append("report.opened", "q3.pdf");
+            Log.Append("peer.banned", "phone");
+            Log.Append("report.closed", "q3.pdf");
+        }
+
+        using var Viewer = AuditLog.OpenReadOnly(File_, Key);
+        var Head = Viewer.Head;
+        Check("a log checks out", Viewer.Verify().Ok && Head.Seq == 3);
+
+        var Lines = File.ReadAllLines(File_);
+        string Edited = Path.Combine(Dir, "edited.log"), Cut = Path.Combine(Dir, "cut.log");
+        Lines[1] = Lines[1].Replace("phone", "tablet");
+        File.WriteAllLines(Edited, Lines);
+        using (var Changed = AuditLog.OpenReadOnly(Edited, Key)) Check("an entry that was edited is found", !Changed.Verify().Ok);
+
+        File.WriteAllLines(Cut, File.ReadAllLines(File_).Take(2));
+        using (var Short = AuditLog.OpenReadOnly(Cut, Key))
+        {
+            Check("a log with its last entries cut off still looks fine on its own", Short.Verify().Ok);
+            Check("...but not when you kept the newest entry somewhere else", !Short.Verify(Head).Ok);
+        }
+
+        using (var WrongKey = AuditLog.OpenReadOnly(File_, new SecureData(Encoding.UTF8.GetBytes("another key at all")))) Check("the wrong key can't check it", !WrongKey.Verify().Ok);
+
+        //Signed by the device: someone who only has the key can't write a log that passes
+        var Me = YuukoIdentity.Create("pc"); var Other = YuukoIdentity.Create("other");
+        string Mine = Path.Combine(Dir, "mine.log"), Theirs = Path.Combine(Dir, "theirs.log");
+        using (var Log = AuditLog.Open(Mine, Key, Me)) Log.Append("report.opened", "q3.pdf");
+        using (var Log = AuditLog.Open(Theirs, Key, Other)) Log.Append("report.opened", "q3.pdf");
+
+        using (var Own = AuditLog.OpenReadOnly(Mine, Key)) Check("a log signed by the device checks out", Own.Verify(null, Me.Fingerprint).Ok);
+        using (var Forged = AuditLog.OpenReadOnly(Theirs, Key)) Check("a log written with the key by another device is refused", !Forged.Verify(null, Me.Fingerprint).Ok);
+
         await Task.CompletedTask;
-
-        static bool ImportFails(string text, string? mustMention = null)
-        {
-            try { YuukoIdentity.Import(Encoding.UTF8.GetBytes(text)); return false; }
-            catch (FormatException e) { return mustMention is null || e.Message.Contains(mustMention); }
-        }
     }
 
-    // ── allowlist / key pinning ──────────────────────────────────────────────
-
-    private static async Task Allowlist()
-    {
-        Section("allowlist (key pinning)");
-        var alice = YuukoIdentity.Create("alice");
-        var restored = YuukoIdentity.Import(alice.Export());
-        {
-            using var t = new LocalBroker();
-            var po = Opts(o => o.TrustDevice("alice", alice.Fingerprint));
-            using var prov = await StartProvider(t, YuukoIdentity.Create("provider"), po);
-
-            Check("pinned device with its real keys CONNECTS", (await TryConnect(t, alice, Opts(), "provider")).ok);
-            Check("same device after export/import still connects (restart-safe)", (await TryConnect(t, restored, Opts(), "provider")).ok);
-
-            var stranger = await TryConnect(t, YuukoIdentity.Create("mallory"), Opts(), "provider");
-            Check($"unknown id is rejected ({stranger.ms} ms, no timeout wait)", !stranger.ok && stranger.ms < 1500);
-
-            var impostor = await TryConnect(t, YuukoIdentity.Create("alice"), Opts(), "provider");   // claims alice, different keys
-            Check($"known id with DIFFERENT keys is rejected ({impostor.ms} ms)", !impostor.ok && impostor.ms < 1500);
-
-            po.UntrustDevice("alice");
-            po.TrustDevice("someone-else", YuukoIdentity.Create("x").Fingerprint);   // allowlist stays on
-            Check("after UntrustDevice a new handshake from that id is rejected", !(await TryConnect(t, YuukoIdentity.Create("alice"), Opts(), "provider")).ok);
-        }
-        {
-            using var t = new LocalBroker();
-            var po = Opts(o => { o.TrustDevice("alice", alice.Fingerprint); o.BannedClients.Add("alice"); });
-            using var prov = await StartProvider(t, YuukoIdentity.Create("provider"), po);
-            Check("ban still wins over the allowlist", !(await TryConnect(t, alice, Opts(), "provider")).ok);
-        }
-        bool badFp = false;
-        try { Opts().TrustDevice("x", "not-a-fingerprint"); } catch (ArgumentException) { badFp = true; }
-        Check("TrustDevice rejects a malformed fingerprint", badFp);
-    }
-
-    // ── pre-shared key ───────────────────────────────────────────────────────
-
-    private static async Task PreSharedKey()
-    {
-        Section("pre-shared key");
-        var psk = RandomNumberGenerator.GetBytes(32);
-        {
-            using var t = new LocalBroker();
-            using var prov = await StartProvider(t, YuukoIdentity.Create("provider"), Opts(o => { o.PreSharedKey = psk; o.RequirePreSharedKey = true; }));
-
-            Check("client WITH the key connects", (await TryConnect(t, YuukoIdentity.Create("c1"), Opts(o => o.PreSharedKey = psk), "provider")).ok);
-            var noKey = await TryConnect(t, YuukoIdentity.Create("c2"), Opts(), "provider");
-            Check($"client WITHOUT the key fails ({noKey.ms} ms)", !noKey.ok);
-            Check("client with the WRONG key fails", !(await TryConnect(t, YuukoIdentity.Create("c3"), Opts(o => o.PreSharedKey = RandomNumberGenerator.GetBytes(32)), "provider")).ok);
-        }
-        Check("RequirePreSharedKey refuses a key shorter than 16 bytes", Throws<InvalidOperationException>(() =>
-            new YuukoHandshake(new LocalBroker(), YuukoIdentity.Create("p"), Opts(o => { o.PreSharedKey = new byte[8]; o.RequirePreSharedKey = true; }))));
-        Check("RequirePreSharedKey refuses an empty key", Throws<InvalidOperationException>(() =>
-            new YuukoHandshake(new LocalBroker(), YuukoIdentity.Create("p"), Opts(o => o.RequirePreSharedKey = true))));
-    }
-
-    private static bool Throws<T>(Action a) where T : Exception
-    {
-        try { a(); return false; } catch (T) { return true; }
-    }
-
-    // ── provider authentication ──────────────────────────────────────────────
-
-    private static async Task ProviderAuthentication()
-    {
-        Section("provider authentication (is the thing that answered really the device I pinned?)");
-        var real = YuukoIdentity.Create("provider");
-        var client = YuukoIdentity.Create("client");
-
-        {
-            using var t = new LocalBroker();
-            using var prov = await StartProvider(t, real, Opts());
-            var pinned = await TryConnect(t, client, Opts(o => o.TrustDevice("provider", real.Fingerprint)), "provider");
-            Check("requester pinned to the real provider CONNECTS", pinned.ok);
-            Console.WriteLine($"       (handshake incl. Dilithium5 sign+verify took {pinned.ms} ms)");
-
-            var wrongPin = await TryConnect(t, client, Opts(o => o.TrustDevice("provider", YuukoIdentity.Create("x").Fingerprint)), "provider");
-            Check($"requester pinned to a DIFFERENT fingerprint refuses the real provider ({wrongPin.ms} ms)", !wrongPin.ok && wrongPin.ms < 1500);
-        }
-        {
-            // The impostor has the right NAME but its own keys. The real provider is not on the mesh at all.
-            using var t = new LocalBroker();
-            var impostor = YuukoIdentity.Create("provider");
-            using var imp = await StartProvider(t, impostor, Opts());
-
-            var pinned = await TryConnect(t, client, Opts(o => o.TrustDevice("provider", real.Fingerprint)), "provider");
-            Check($"IMPOSTOR answering as 'provider' is refused by a pinned requester ({pinned.ms} ms)", !pinned.ok && pinned.ms < 1500);
-
-            var unpinned = await TryConnect(t, client, Opts(), "provider");
-            Check("(documented limit) with NO pin there is nothing to check against, so the impostor is accepted", unpinned.ok);
-        }
-        {
-            // Flip one byte of the provider's signature in flight.
-            using var raw = new LocalBroker();
-            bool tamper = false;
-            var tap = new Tap(raw)
-            {
-                OnPublish = (_, p) => tamper && HandshakeTypeOf(p) == Challenge
-                    ? Edit(p, o => o["Signature"] = FlipFirstByte(o["Signature"]!.GetValue<string>()))
-                    : p,
-            };
-            using var prov = await StartProvider(tap, real, Opts());
-            // The requester talks to 'raw' for its own sends but hears the tapped provider's answers.
-            Check("(control) same setup with no tampering connects", (await TryConnect(raw, client, Opts(), "provider")).ok);
-            tamper = true;
-            var r = await TryConnect(raw, client, Opts(), "provider");
-            Check("a tampered signature is refused even with NO pin", !r.ok);
-        }
-        {
-            // Replay: record a genuine CHALLENGE, then feed it to the same requester during a NEW handshake.
-            using var raw = new LocalBroker();
-            YuukoPacket? recorded = null;
-            YuukoPacket? replay = null;
-            var tap = new Tap(raw)
-            {
-                OnPublish = (_, p) =>
-                {
-                    if (HandshakeTypeOf(p) != Challenge) return p;
-                    if (recorded is null) { recorded = p; return p; }          // handshake 1: let it through
-                    // handshake 2: swap in the old challenge, relabelled so the requester will look at it
-                    var newId = JsonNode.Parse(p.Data)!["HandshakeId"]!.GetValue<string>();
-                    replay = Edit(recorded, o => o["HandshakeId"] = newId);
-                    return replay;
-                },
-            };
-            using var prov = await StartProvider(tap, real, Opts());
-            var first = await TryConnect(raw, client, Opts(o => o.TrustDevice("provider", real.Fingerprint)), "provider");
-            var second = await TryConnect(raw, client, Opts(o => o.TrustDevice("provider", real.Fingerprint)), "provider");
-            Check("first handshake works (this is the genuine challenge being recorded)", first.ok);
-            Check("replaying that old CHALLENGE into a new handshake is refused", replay is not null && !second.ok);
-        }
-        {
-            // Forged ACCEPT: swallow the real one and inject a fake. The requester must not believe it.
-            using var raw = new LocalBroker();
-            bool forge = false;
-            var tap = new Tap(raw)
-            {
-                OnPublish = (_, p) => forge && HandshakeTypeOf(p) == Accept
-                    ? Edit(p, o => o["EncAccept"] = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)))
-                    : p,
-            };
-            using var prov = await StartProvider(tap, real, Opts());
-            Check("(control) same setup with a genuine ACCEPT connects", (await TryConnect(raw, client, Opts(), "provider")).ok);
-            forge = true;
-            var r = await TryConnect(raw, client, Opts(o => o.Timeout = TimeSpan.FromSeconds(1)), "provider");
-            Check("a forged ACCEPT does not establish a session", !r.ok);
-        }
-    }
-
-    // ── handshake abuse ──────────────────────────────────────────────────────
-
-    private static async Task HandshakeAbuse()
-    {
-        Section("handshake abuse (malformed input, flooding)");
-
-        // Hand-built HELLOs that are wrong in different ways. None should hurt the provider.
-        {
-            using var t = new LocalBroker();
-            var provId = YuukoIdentity.Create("provider");
-            using var prov = await StartProvider(t, provId, Opts());
-
-            async Task Send(Action<JsonObject> shape)
-            {
-                var o = new JsonObject
-                {
-                    ["Type"] = Hello, ["FromId"] = "evil", ["ToId"] = "provider", ["HandshakeId"] = Guid.NewGuid().ToString("N"),
-                    ["KyberPub"] = new JsonObject { ["t"] = "AAAA", ["rho"] = "AAAA" },
-                    ["SigPub"] = new JsonObject { ["rho"] = "AAAA", ["t1"] = "AAAA" },
-                    ["NonceC"] = Convert.ToBase64String(new byte[16]),
-                };
-                shape(o);
-                await t.PublishAsync("yuuko/handshake", YuukoPacket.Ephemeral("Hello:x", Encoding.UTF8.GetBytes(o.ToJsonString())));
-            }
-
-            await Send(_ => { });                                           // garbage key material
-            await Send(o => o.Remove("KyberPub"));                          // missing keys
-            await Send(o => o.Remove("SigPub"));
-            await Send(o => o.Remove("NonceC"));
-            await Send(o => o["FromId"] = new string('x', 5000));           // absurd id
-            await Send(o => o["FromId"] = "");                              // empty id
-            await t.PublishAsync("yuuko/handshake", YuukoPacket.Ephemeral("junk", Encoding.UTF8.GetBytes("{not json")));
-            Check("malformed HELLOs are ignored and the provider still works afterwards",
-                (await TryConnect(t, YuukoIdentity.Create("good"), Opts(), "provider")).ok);
-        }
-
-        // Pending-handshake cap + expiry: attackers that never finish tie up slots, then lose them.
-        {
-            using var raw = new LocalBroker();
-            var dropping = new Tap(raw) { OnPublish = (_, p) => HandshakeTypeOf(p) == Response ? null : p };   // never answer the challenge
-            using var prov = await StartProvider(raw, YuukoIdentity.Create("provider"),
-                Opts(o => { o.MaxPendingHandshakes = 3; o.Timeout = TimeSpan.FromMilliseconds(1500); }));
-
-            var hung = Enumerable.Range(0, 3).Select(i =>
-                TryConnect(dropping, YuukoIdentity.Create("atk" + i), Opts(o => o.Timeout = TimeSpan.FromMilliseconds(1000)), "provider")).ToArray();
-            await Task.Delay(150);
-
-            var shed = await TryConnect(raw, YuukoIdentity.Create("good-1"), Opts(o => o.Timeout = TimeSpan.FromMilliseconds(800)), "provider");
-            Check("with the pending cap full, a new HELLO is shed (dropped)", !shed.ok);
-
-            await Task.WhenAll(hung);
-            await Task.Delay(900);                                          // the stuck entries are now past their expiry
-            Check("after the stuck entries expire, the next HELLO purges them and connects",
-                (await TryConnect(raw, YuukoIdentity.Create("good-2"), Opts(), "provider")).ok);
-        }
-    }
+    #endregion
 }

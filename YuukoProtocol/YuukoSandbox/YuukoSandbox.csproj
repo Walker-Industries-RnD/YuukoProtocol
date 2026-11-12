@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="..\ZenohNative.targets" />
 
@@ -13,7 +13,7 @@
     <ProjectReference Include="..\YuukoProtocol\YuukoProtocol.csproj" />
   </ItemGroup>
 
-  <!-- The self-test models an attacker with a stolen identity, so it calls Pariah (Kyber) directly. -->
+  <!-- SecureData (the type the audit log key is in) lives in Pariah -->
   <ItemGroup>
     <Reference Include="PariahCybersecurity">
       <HintPath>..\libs\PariahCybersecurity.dll</HintPath>

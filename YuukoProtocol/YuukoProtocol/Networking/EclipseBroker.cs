@@ -30,74 +30,68 @@ namespace YuukoProtocol
 {
     public sealed class EclipseBrokerOptions
     {
-        /// <summary>Key expression carrying the encrypted data/command traffic.</summary>
+        //Key expression carrying the encrypted data/command traffic.
         public string DataTopic { get; set; } = "yuuko/eclipse/data";
 
-        /// <summary>How long RequestAsync waits for a reply on each attempt.</summary>
+        //How long RequestAsync waits for a reply on each attempt.
         public TimeSpan RequestTimeout { get; set; } = TimeSpan.FromSeconds(10);
 
-        /// <summary>Extra RequestAsync attempts after a timeout (reads are safe to repeat).</summary>
+        //Extra RequestAsync attempts after a timeout (reads are safe to repeat).
         public int RequestRetries { get; set; } = 1;
 
-        /// <summary>Handshake tuning (banned list, pinned devices, PSK, handshake topic, timeout).</summary>
+        //Handshake tuning (banned list, pinned devices, PSK, handshake topic, timeout).
         public HandshakeOptions Handshake { get; } = new();
 
-        // ── commands ──────────────────────────────────────────────────────────
+        //Commands
 
-        /// <summary>Default time to wait for a command's ack on each attempt.</summary>
+        //Default time to wait for a command's ack on each attempt.
         public TimeSpan CommandTimeout { get; set; } = TimeSpan.FromSeconds(10);
 
-        /// <summary>Default extra attempts after a timeout. Retries are safe: the receiver runs a command at most once.</summary>
+        //Default extra attempts after a timeout. Retries are safe: the receiver runs a command at most once.
         public int CommandRetries { get; set; } = 1;
 
-        /// <summary>How many commands this device runs at the same time; more are answered "Busy".</summary>
+        //How many commands this device runs at the same time; more are answered "Busy".
         public int MaxConcurrentCommands { get; set; } = 64;
 
-        /// <summary>Largest command payload accepted, in bytes.</summary>
+        //Largest command payload accepted, in bytes.
         public int MaxCommandBytes { get; set; } = 1 << 20;
 
-        /// <summary>How long a handler may run before it is cancelled.</summary>
+        //How long a handler may run before it is cancelled.
         public TimeSpan CommandHandlerTimeout { get; set; } = TimeSpan.FromSeconds(30);
 
-        /// <summary>How long a finished command's answer is remembered, so a retry gets the same answer instead of a second run.</summary>
+        //How long a finished command's answer is remembered, so a retry gets the same answer instead of a second run.
         public TimeSpan CommandDedupeWindow { get; set; } = TimeSpan.FromMinutes(5);
 
-        /// <summary>
-        /// Decides whether peer X (first argument) may run command Y (second argument). Return false to
-        /// answer "Denied" without running the handler. Null allows every connected peer. Built-in
-        /// "yuuko.*" commands (ping) are not subject to it. If this throws, the command is denied.
-        /// </summary>
+        //Decides whether peer X (first argument) may run command Y (second argument). Return false to
+        //answer "Denied" without running the handler. Null allows every connected peer. Built-in
+        //"yuuko.*" commands (ping) are not subject to it. If this throws, the command is denied.
         public Func<string, string, bool>? CommandAuthorizer { get; set; }
 
-        // ── relay (broadcast) ─────────────────────────────────────────────────
+        //Relay (broadcast)
 
-        /// <summary>
-        /// How many devices a broadcast may be passed along through. A change is dropped once it has been relayed this many
-        /// times, so it cannot wander forever even if something is wrong. A receiver also clamps larger values it is sent.
-        /// </summary>
+        //How many devices a broadcast may be passed along through. A change is dropped once it has been relayed this many
+        //times, so it cannot wander forever even if something is wrong. A receiver also clamps larger values it is sent.
         public int RelayMaxHops { get; set; } = 8;
 
-        /// <summary>How long a broadcast's id is remembered. A broadcast that comes back within this window is ignored (that is what stops loops).</summary>
+        //How long a broadcast's id is remembered. A broadcast that comes back within this window is ignored (that is what stops loops).
         public TimeSpan RelayDedupeWindow { get; set; } = TimeSpan.FromMinutes(10);
 
-        /// <summary>Most broadcast ids remembered at once. When full, new relayed broadcasts are answered "Busy" (never the old ones forgotten early).</summary>
+        //Most broadcast ids remembered at once. When full, new relayed broadcasts are answered "Busy" (never the old ones forgotten early).
         public int RelayMaxRemembered { get; set; } = 50_000;
 
-        /// <summary>A broadcast signed longer ago than this is refused (a replay). Needs the devices' clocks to roughly agree.</summary>
+        //A broadcast signed longer ago than this is refused (a replay). Needs the devices' clocks to roughly agree.
         public TimeSpan RelayMaxAge { get; set; } = TimeSpan.FromMinutes(5);
 
-        /// <summary>How far ahead of our own clock a broadcast's signing time may be.</summary>
+        //How far ahead of our own clock a broadcast's signing time may be.
         public TimeSpan RelayClockSkew { get; set; } = TimeSpan.FromMinutes(2);
 
-        /// <summary>
-        /// Devices whose broadcasts we accept even when we hold no session with them, by key fingerprint. Every broadcast
-        /// is signed by the device that started it; a signature only counts if the signing key is one we know here, is a
-        /// device we are connected to right now, or is a pinned device (<see cref="HandshakeOptions.TrustDevice"/> / the
-        /// device directory). Trusting an origin does NOT let that device connect to us.
-        /// </summary>
+        //Devices whose broadcasts we accept even when we hold no session with them, by key fingerprint. Every broadcast
+        //is signed by the device that started it; a signature only counts if the signing key is one we know here, is a
+        //device we are connected to right now, or is a pinned device (TrustDevice / the
+        //device directory). Trusting an origin does NOT let that device connect to us.
         public ConcurrentDictionary<string, string> TrustedOrigins { get; } = new(StringComparer.Ordinal);
 
-        /// <summary>Accept broadcasts started by <paramref name="clientId"/> when they are signed with the key that has this <paramref name="fingerprint"/>.</summary>
+        //Accept broadcasts started by clientId when they are signed with the key that has this fingerprint.
         public void TrustOrigin(string clientId, string fingerprint)
         {
             if (string.IsNullOrWhiteSpace(clientId))
@@ -110,63 +104,56 @@ namespace YuukoProtocol
 
         public bool UntrustOrigin(string clientId) => TrustedOrigins.TryRemove(clientId, out _);
 
-        // ── presence ──────────────────────────────────────────────────────────
+        //Presence
 
-        /// <summary>How long a ping waits for its answer.</summary>
+        //How long a ping waits for its answer.
         public TimeSpan PingTimeout { get; set; } = TimeSpan.FromSeconds(3);
 
-        /// <summary>If above zero, ping every connected peer this often. Peers that stay silent are dropped once their lanes run out.</summary>
+        //If above zero, ping every connected peer this often. Peers that stay silent are dropped once their lanes run out.
         public TimeSpan HeartbeatInterval { get; set; } = TimeSpan.Zero;
 
-        /// <summary>A peer counts as online if we heard from it within this window. Zero = three heartbeats, or 60 s without a heartbeat.</summary>
+        //A peer counts as online if we heard from it within this window. Zero = three heartbeats, or 60 s without a heartbeat.
         public TimeSpan PresenceTimeout { get; set; } = TimeSpan.Zero;
 
-        // ── devices ───────────────────────────────────────────────────────────
+        //Devices
 
-        /// <summary>
-        /// Your list of paired devices. If you supply one, ONLY the devices in it may connect to this
-        /// node (an empty directory means nobody can), and this node only opens sessions with them.
-        /// </summary>
+        //Your list of paired devices. If you supply one, ONLY the devices in it may connect to this
+        //node (an empty directory means nobody can), and this node only opens sessions with them.
         public DeviceDirectory? Directory { get; set; }
 
-        /// <summary>
-        /// The Yuuko TLS certificate this device's transport uses. Found automatically when the transport is a
-        /// <see cref="ZenohBroker"/> that made one; set it yourself only if you open the transport another way.
-        /// </summary>
+        //The Yuuko TLS certificate this device's transport uses. Found automatically when the transport is a
+        //ZenohBroker that made one; set it yourself only if you open the transport another way.
         public YuukoCertificate? TlsCertificate { get; set; }
 
-        // ── group changes ─────────────────────────────────────────────────────
+        //Group changes
 
-        /// <summary>
-        /// Decides whether this device accepts a change to who is in the group that another device announces
-        /// (<see cref="EclipseBroker.IntroduceAsync"/> / <see cref="EclipseBroker.RevokeAsync"/>). It is told WHO is announcing
-        /// (checked, not claimed) and what they want, and returns true to allow it. This is where you ask the user
-        /// ("Phone wants you to trust Headset. Allow?"). <b>Null (the default) refuses every change.</b> A change can
-        /// take as long as <see cref="CommandHandlerTimeout"/>; the announcing device does not wait for the answer.
-        /// If it throws, the change is refused.
-        /// </summary>
+        //Decides whether this device accepts a change to who is in the group that another device announces
+        //(IntroduceAsync / RevokeAsync). It is told WHO is announcing
+        //(checked, not claimed) and what they want, and returns true to allow it. This is where you ask the user
+        //("Phone wants you to trust Headset. Allow?"). Null (the default) refuses every change. A change can
+        //take as long as CommandHandlerTimeout; the announcing device does not wait for the answer.
+        //If it throws, the change is refused.
         public Func<GroupChange, Task<bool>>? GroupChangePolicy { get; set; }
     }
 
     public enum GroupChangeKind { Introduce, Revoke }
 
-    /// <summary>One device telling another "trust this device" or "stop trusting this device".</summary>
-    /// <param name="IntroducedBy">The device that announced it. For a relayed announcement this was verified from its signature.</param>
-    /// <param name="Endpoint">Where the new device can be reached, if the announcer said (informational: connecting is up to you).</param>
+    //One device telling another "trust this device" or "stop trusting this device".
+    //IntroducedBy: The device that announced it. For a relayed announcement this was verified from its signature.
+    //Endpoint: Where the new device can be reached, if the announcer said (informational: connecting is up to you).
     public sealed record GroupChange(GroupChangeKind Kind, string DeviceId, string Fingerprint, string? Endpoint, string IntroducedBy, bool ViaRelay);
 
-    /// <summary>What <see cref="EclipseBroker.PairWithAsync(string,string?,System.Threading.CancellationToken)"/> returned.</summary>
-    /// <param name="RestartTransport">
-    /// True if this device joined the other device's TLS group while pairing. Its new certificate is on disk, but the
-    /// transport still uses the temporary one from the code: open the transport again (restart the app) soon, because
-    /// the temporary certificate is only good for a few minutes.
-    /// </param>
+    //What CancellationToken) returned.
+    //RestartTransport:
+    //True if this device joined the other device's TLS group while pairing. Its new certificate is on disk, but the
+    //transport still uses the temporary one from the code: open the transport again (restart the app) soon, because
+    //the temporary certificate is only good for a few minutes.
     public sealed record PairResult(bool Success, string? Failure, string? DeviceId, string? Moniker, bool RestartTransport = false)
     {
         internal static PairResult Fail(string why) => new(false, why, null, null);
     }
 
-    /// <summary>A pairing window that is open: show <see cref="Code"/> (as text or a QR code) to the person pairing.</summary>
+    //A pairing window that is open: show Code (as text or a QR code) to the person pairing.
     public sealed record PairingOffer(string Code, PairingCode Details)
     {
         public DateTimeOffset ExpiresUtc => Details.ExpiresUtc;
@@ -209,13 +196,13 @@ namespace YuukoProtocol
         private CancellationTokenSource? _heartbeatCts;
         private int _disposed;
 
-        /// <summary>Raised when a peer finishes a handshake with us.</summary>
+        //Raised when a peer finishes a handshake with us.
         public event Action<PeerInfo>? PeerConnected;
 
-        /// <summary>Raised when we no longer hold any session with a peer: (peer id, reason).</summary>
+        //Raised when we no longer hold any session with a peer: (peer id, reason).
         public event Action<string, string>? PeerDisconnected;
 
-        /// <summary>The list of devices this node knows by nickname.</summary>
+        //The list of devices this node knows by nickname.
         public DeviceDirectory Devices { get; }
 
         private EclipseBroker(IYuukoApi transport, YuukoIdentity identity, EclipseBrokerOptions opts)
@@ -271,22 +258,18 @@ namespace YuukoProtocol
 
         private YuukoCertificate? MyCertificate => _opts.TlsCertificate ?? (_transport as ZenohBroker)?.Certificate;
 
-        /// <summary>
-        /// True after this device joined another device's TLS group while pairing: the transport must be opened again to use the
-        /// new certificate, and until then this device cannot offer pairing codes (they would carry the old authority).
-        /// </summary>
+        //True after this device joined another device's TLS group while pairing: the transport must be opened again to use the
+        //new certificate, and until then this device cannot offer pairing codes (they would carry the old authority).
         public bool NeedsTransportRestart { get; private set; }
 
         // Built-in commands that may travel as a signed broadcast (everything else starting "yuuko." may not).
         private static bool IsRelayableBuiltIn(string name) => name is IntroduceCommand or RevokeCommand;
 
-        /// <summary>Raised on the OFFERING device when a newcomer has paired using its code: (the newcomer's id, its key fingerprint). Its keys are already trusted.</summary>
+        //Raised on the OFFERING device when a newcomer has paired using its code: (the newcomer's id, its key fingerprint). Its keys are already trusted.
         public event Action<string, string>? DevicePaired;
 
-        /// <summary>
-        /// Security-relevant decisions this node made, as (kind, subject, detail): refused connections, kicks and bans, pairing windows,
-        /// group changes accepted or refused, commands denied. Feed it to an <see cref="AuditLog"/> (<see cref="AuditLog.Attach"/>).
-        /// </summary>
+        //Security-relevant decisions this node made, as (kind, subject, detail): refused connections, kicks and bans, pairing windows,
+        //group changes accepted or refused, commands denied. Feed it to an AuditLog (Attach).
         public event Action<string, string, string>? AuditEvent;
 
         private void Audit(string kind, string subject, string detail)
@@ -299,10 +282,10 @@ namespace YuukoProtocol
         //For the sync layers that sign their own data (Cogitarium)
         internal YuukoIdentity LocalIdentity => _identity;
 
-        /// <summary>This device's key fingerprint: what other devices pin to trust it.</summary>
+        //This device's key fingerprint: what other devices pin to trust it.
         public string Fingerprint => _identity.Fingerprint;
 
-        /// <summary>Wraps <paramref name="transport"/> with an Eclipse-secured overlay for <paramref name="identity"/>.</summary>
+        //Wraps transport with an Eclipse-secured overlay for identity.
         public static EclipseBroker Create(IYuukoApi transport, YuukoIdentity identity, EclipseBrokerOptions? options = null)
         {
             if (transport is null) throw new ArgumentNullException(nameof(transport));
@@ -310,7 +293,7 @@ namespace YuukoProtocol
             return new EclipseBroker(transport, identity, options ?? new EclipseBrokerOptions());
         }
 
-        /// <summary>Begins answering handshakes, data requests and commands. Idempotent.</summary>
+        //Begins answering handshakes, data requests and commands. Idempotent.
         public async Task StartAsync(CancellationToken ct = default)
         {
             ThrowIfDisposed();
@@ -331,9 +314,9 @@ namespace YuukoProtocol
             finally { _startLock.Release(); }
         }
 
-        // ── Provider API ─────────────────────────────────────────────────────────
+        //Provider API
 
-        /// <summary>Publishes a packet into the local store so connected peers can request it.</summary>
+        //Publishes a packet into the local store so connected peers can request it.
         public void Serve(string dataTopic, YuukoPacket packet)
         {
             ThrowIfDisposed();
@@ -344,13 +327,11 @@ namespace YuukoProtocol
             store[packet.Name] = packet;
         }
 
-        // ── Requester API ────────────────────────────────────────────────────────
+        //Requester API
 
-        /// <summary>
-        /// Ensures a session with <paramref name="providerId"/> (handshaking if needed), then
-        /// requests all retained packets on <paramref name="dataTopic"/>, decrypted.
-        /// Returns an empty list on rejection/timeout.
-        /// </summary>
+        //Ensures a session with providerId (handshaking if needed), then
+        //requests all retained packets on dataTopic, decrypted.
+        //Returns an empty list on rejection/timeout.
         public async Task<IReadOnlyList<YuukoPacket>> RequestAsync(
             string providerId, string dataTopic, CancellationToken ct = default)
         {
@@ -366,9 +347,9 @@ namespace YuukoProtocol
             catch { return Array.Empty<YuukoPacket>(); }
         }
 
-        // ── Commands ─────────────────────────────────────────────────────────────
+        //Commands
 
-        /// <summary>Registers (or replaces) the code that runs when another device sends <paramref name="command"/>.</summary>
+        //Registers (or replaces) the code that runs when another device sends command.
         public void On(string command, CommandHandler handler)
         {
             ThrowIfDisposed();
@@ -379,13 +360,11 @@ namespace YuukoProtocol
             _handlers[command] = handler ?? throw new ArgumentNullException(nameof(handler));
         }
 
-        /// <summary>Removes a command handler. Peers asking for it afterwards get "UnknownCommand".</summary>
+        //Removes a command handler. Peers asking for it afterwards get "UnknownCommand".
         public bool Off(string command) => _handlers.TryRemove(command, out _);
 
-        /// <summary>
-        /// Asks <paramref name="peerId"/> to run <paramref name="command"/> and waits for its ack. Opens a
-        /// session first if needed. Never throws for network trouble: check <see cref="CommandAck.Status"/>.
-        /// </summary>
+        //Asks peerId to run command and waits for its ack. Opens a
+        //session first if needed. Never throws for network trouble: check Status.
         public async Task<CommandAck> SendCommandAsync(string peerId, string command, byte[]? payload = null,
             CommandOptions? options = null, CancellationToken ct = default)
         {
@@ -413,30 +392,27 @@ namespace YuukoProtocol
                 : new CommandAck(ack.Status, ack.Result, ack.Message, sw.Elapsed);
         }
 
-        /// <summary>Round-trip check. The ack's <see cref="CommandAck.Elapsed"/> is the latency.</summary>
+        //Round-trip check. The ack's Elapsed is the latency.
         public Task<CommandAck> PingAsync(string peerId, CancellationToken ct = default) =>
             SendCommandAsync(peerId, "yuuko.ping", Array.Empty<byte>(),
                 new CommandOptions { Timeout = _opts.PingTimeout, Retries = 0 }, ct);
 
-        // ── Broadcast (relay) ────────────────────────────────────────────────────
+        //Broadcast (relay)
 
-        /// <summary>
-        /// Runs <paramref name="command"/> on every device in the group, including ones this device is not connected to:
-        /// each device that receives it runs it, then passes it on to ITS other peers.
-        /// <para>
-        /// Each broadcast gets an id. A device that has already seen the id ignores it and does not pass it on again, so a
-        /// group where everyone is connected to everyone, or one with loops, does not echo forever. It also is not run
-        /// on THIS device: if you want it here too, run it yourself.
-        /// </para>
-        /// <para>
-        /// Trust: the encryption is between neighbours, so a device that relays a broadcast CAN READ it. But it cannot
-        /// forge or change one: this device signs every broadcast (Dilithium5), and a receiver only runs it if the
-        /// signing key is one it already trusts for that origin (<see cref="EclipseBrokerOptions.TrustOrigin"/>, a pinned
-        /// device, or a device it is connected to). A relay can still drop a broadcast or cut its reach short. Only relay
-        /// through devices you are happy to show the content to.
-        /// </para>
-        /// Reaches only devices connected through sessions that already exist (<see cref="ConnectedPeers"/>).
-        /// </summary>
+        //Runs command on every device in the group, including ones this device is not connected to:
+        //each device that receives it runs it, then passes it on to ITS other peers.
+        //
+        //Each broadcast gets an id. A device that has already seen the id ignores it and does not pass it on again, so a
+        //group where everyone is connected to everyone, or one with loops, does not echo forever. It also is not run
+        //on THIS device: if you want it here too, run it yourself.
+        //
+        //Trust: the encryption is between neighbours, so a device that relays a broadcast CAN READ it. But it cannot
+        //forge or change one: this device signs every broadcast (Dilithium5), and a receiver only runs it if the
+        //signing key is one it already trusts for that origin (TrustOrigin, a pinned
+        //device, or a device it is connected to). A relay can still drop a broadcast or cut its reach short. Only relay
+        //through devices you are happy to show the content to.
+        //
+        //Reaches only devices connected through sessions that already exist (ConnectedPeers).
         public async Task<BroadcastResult> BroadcastAsync(string command, byte[]? payload = null,
             CommandOptions? options = null, CancellationToken ct = default)
         {
@@ -467,7 +443,7 @@ namespace YuukoProtocol
             return new BroadcastResult(id, sent.ToDictionary(s => s.peer, s => s.ack, StringComparer.Ordinal));
         }
 
-        /// <summary>Accept broadcasts started by <paramref name="clientId"/> (signed with the key that has this fingerprint), without allowing it to connect. See <see cref="EclipseBrokerOptions.TrustedOrigins"/>.</summary>
+        //Accept broadcasts started by clientId (signed with the key that has this fingerprint), without allowing it to connect. See TrustedOrigins.
         public void TrustOrigin(string clientId, string fingerprint) => _opts.TrustOrigin(clientId, fingerprint);
 
         public bool UntrustOrigin(string clientId) => _opts.UntrustOrigin(clientId);
@@ -633,12 +609,12 @@ namespace YuukoProtocol
                 if (kv.Value <= now) _relaySeen.TryRemove(kv.Key, out _);
         }
 
-        // ── Peers, presence, kick ────────────────────────────────────────────────
+        //Peers, presence, kick
 
-        /// <summary>Ids of every peer we hold a session with.</summary>
+        //Ids of every peer we hold a session with.
         public IReadOnlyCollection<string> ConnectedPeers => _handshake.ConnectedPeers;
 
-        /// <summary>Every connected peer, with its key fingerprint and when we last heard from it.</summary>
+        //Every connected peer, with its key fingerprint and when we last heard from it.
         public IReadOnlyList<PeerInfo> Peers => _handshake.GetSessions().Select(InfoOf).ToList();
 
         public bool IsConnected(string peerId) => _handshake.TryGetSession(peerId, out _);
@@ -646,7 +622,7 @@ namespace YuukoProtocol
         // For the self-test: how many sessions we hold with a peer (an old one lingers briefly after a rekey).
         internal int SessionCountWith(string peerId) => _handshake.GetSessionsOf(peerId).Count;
 
-        /// <summary>Connected, and we heard from it recently (see <see cref="EclipseBrokerOptions.PresenceTimeout"/>).</summary>
+        //Connected, and we heard from it recently (see PresenceTimeout).
         public bool IsOnline(string peerId)
         {
             if (!IsConnected(peerId)) return false;
@@ -655,11 +631,9 @@ namespace YuukoProtocol
 
         public DateTimeOffset? LastSeen(string peerId) => _lastSeen.TryGetValue(peerId, out var t) ? t : null;
 
-        /// <summary>
-        /// Ends every session with <paramref name="peerId"/> and tells it so (authenticated, so a bystander
-        /// cannot fake it). With <paramref name="ban"/> it is also refused if it tries to reconnect, until
-        /// <see cref="Unban"/>. Returns false if we had no session with it.
-        /// </summary>
+        //Ends every session with peerId and tells it so (authenticated, so a bystander
+        //cannot fake it). With ban it is also refused if it tries to reconnect, until
+        //Unban. Returns false if we had no session with it.
         public async Task<bool> KickAsync(string peerId, bool ban = true, string? reason = null, CancellationToken ct = default)
         {
             ThrowIfDisposed();
@@ -685,7 +659,7 @@ namespace YuukoProtocol
             return true;
         }
 
-        /// <summary>Lets a previously banned peer connect again.</summary>
+        //Lets a previously banned peer connect again.
         public bool Unban(string peerId)
         {
             bool removed = _opts.Handshake.BannedClients.Remove(peerId);
@@ -693,17 +667,15 @@ namespace YuukoProtocol
             return removed;
         }
 
-        // ── Devices (nicknames) ──────────────────────────────────────────────────
+        //Devices (nicknames)
 
-        /// <summary>
-        /// Adds a device to the directory and trusts exactly that key. <paramref name="moniker"/> is your
-        /// local nickname for it; it never leaves this device.
-        /// </summary>
+        //Adds a device to the directory and trusts exactly that key. moniker is your
+        //local nickname for it; it never leaves this device.
         public DeviceRecord PairDevice(string moniker, string clientId, string fingerprint,
             string? displayName = null, params string[] groups) =>
             Devices.Add(moniker, clientId, fingerprint, displayName, groups);
 
-        /// <summary>Removes a device from the directory (so it is no longer trusted) and, by default, kicks it.</summary>
+        //Removes a device from the directory (so it is no longer trusted) and, by default, kicks it.
         public async Task<bool> UnpairDeviceAsync(string moniker, bool kick = true, CancellationToken ct = default)
         {
             var rec = Devices.Find(moniker);
@@ -713,33 +685,30 @@ namespace YuukoProtocol
             return true;
         }
 
-        /// <summary>A handle for talking to a paired device by nickname. Throws if there is no such nickname.</summary>
+        //A handle for talking to a paired device by nickname. Throws if there is no such nickname.
         public DeviceHandle Device(string moniker) =>
             new(this, Devices.Find(moniker) ?? throw new KeyNotFoundException($"No device is paired as '{moniker}'."));
 
-        /// <summary>Every paired device.</summary>
+        //Every paired device.
         public DeviceSet AllDevices() => new(Devices.All().Select(r => new DeviceHandle(this, r)).ToList());
 
-        /// <summary>Every paired device in the named group.</summary>
+        //Every paired device in the named group.
         public DeviceSet DeviceGroup(string group) => new(Devices.InGroup(group).Select(r => new DeviceHandle(this, r)).ToList());
 
-        /// <summary>The directory joined with live connection state: the "list my devices" view.</summary>
+        //The directory joined with live connection state: the "list my devices" view.
         public IReadOnlyList<DeviceStatus> DeviceStatuses() => Devices.All().Select(r => new DeviceStatus(
             r.Moniker, r.ClientId, r.Fingerprint, r.DisplayName, r.Groups,
             IsConnected(r.ClientId), IsOnline(r.ClientId), LastSeen(r.ClientId))).ToList();
 
-        // ── Pairing: adding a new device with a code ─────────────────────────────
+        //Pairing: adding a new device with a code
 
-        /// <summary>
-        /// Opens a pairing window and returns the code to show (as text, or turn it into a QR code). For
-        /// <paramref name="lifetime"/> (default 5 minutes) ONE new device that has the code may connect, even though
-        /// it is not on the allowlist. When it succeeds its keys are pinned (and it is added to <see cref="Devices"/>)
-        /// and the code stops working. <b>The code is a secret until then.</b> Show it only to the person pairing.
-        /// <para>
-        /// The code carries this device's key fingerprint, address and TLS certificate when it knows them (a
-        /// <see cref="ZenohBroker"/> transport). Pass <paramref name="endpoint"/> to override the address in the code.
-        /// </para>
-        /// </summary>
+        //Opens a pairing window and returns the code to show (as text, or turn it into a QR code). For
+        //lifetime (default 5 minutes) ONE new device that has the code may connect, even though
+        //it is not on the allowlist. When it succeeds its keys are pinned (and it is added to Devices)
+        //and the code stops working. The code is a secret until then. Show it only to the person pairing.
+        //
+        //The code carries this device's key fingerprint, address and TLS certificate when it knows them (a
+        //ZenohBroker transport). Pass endpoint to override the address in the code.
         public PairingOffer BeginPairing(TimeSpan? lifetime = null, string? endpoint = null, int maxAttempts = 10)
         {
             ThrowIfDisposed();
@@ -760,7 +729,7 @@ namespace YuukoProtocol
             return new PairingOffer(details.Encode(), details);
         }
 
-        /// <summary>Closes the pairing window now (the code stops working).</summary>
+        //Closes the pairing window now (the code stops working).
         public void CancelPairing()
         {
             if (_handshake.PairingOpen) Audit("pairing.cancelled", ClientId, "");
@@ -769,12 +738,10 @@ namespace YuukoProtocol
 
         public bool PairingOpen => _handshake.PairingOpen;
 
-        /// <summary>
-        /// Joins the device that made <paramref name="code"/>. The transport must already be able to reach it: for a
-        /// <see cref="ZenohBroker"/> that means opening it with <see cref="PairingCode.ToTransportOptions"/> first. On
-        /// success the other device is pinned, added to <see cref="Devices"/> (as <paramref name="moniker"/>, or its own
-        /// name), and the two are connected. Never throws for a bad or expired code: read <see cref="PairResult.Failure"/>.
-        /// </summary>
+        //Joins the device that made code. The transport must already be able to reach it: for a
+        //ZenohBroker that means opening it with ToTransportOptions first. On
+        //success the other device is pinned, added to Devices (as moniker, or its own
+        //name), and the two are connected. Never throws for a bad or expired code: read Failure.
         public async Task<PairResult> PairWithAsync(string code, string? moniker = null, CancellationToken ct = default)
         {
             ThrowIfDisposed();
@@ -969,13 +936,11 @@ namespace YuukoProtocol
             public string CaKeyPem { get; set; } = "";
         }
 
-        // ── Group changes: telling the rest of the group about a device ──────────
+        //Group changes: telling the rest of the group about a device
 
-        /// <summary>
-        /// Tells the rest of the group to trust <paramref name="deviceId"/> (a device THIS device already trusts), and tells
-        /// that device about the other members. Each receiving device asks its own <see cref="EclipseBrokerOptions.GroupChangePolicy"/>
-        /// before doing anything, and a device with no policy refuses. Returns what the broadcast reached directly.
-        /// </summary>
+        //Tells the rest of the group to trust deviceId (a device THIS device already trusts), and tells
+        //that device about the other members. Each receiving device asks its own GroupChangePolicy
+        //before doing anything, and a device with no policy refuses. Returns what the broadcast reached directly.
         public async Task<BroadcastResult> IntroduceAsync(string deviceId, string? endpoint = null, CancellationToken ct = default)
         {
             ThrowIfDisposed();
@@ -995,10 +960,8 @@ namespace YuukoProtocol
             return result;
         }
 
-        /// <summary>
-        /// Stops trusting <paramref name="deviceId"/> here (and disconnects it), and asks the rest of the group to do the
-        /// same. Devices that are offline, or whose policy refuses, keep trusting it. <b>Revocation is a request, not a guarantee.</b>
-        /// </summary>
+        //Stops trusting deviceId here (and disconnects it), and asks the rest of the group to do the
+        //same. Devices that are offline, or whose policy refuses, keep trusting it. Revocation is a request, not a guarantee.
         public async Task<BroadcastResult> RevokeAsync(string deviceId, CancellationToken ct = default)
         {
             ThrowIfDisposed();
@@ -1098,7 +1061,7 @@ namespace YuukoProtocol
             }
         }
 
-        // ── Message handling ───────────────────────────────────────────────────────
+        //Message handling
 
         private async Task OnDataMessageAsync(YuukoPacket pkt)
         {
@@ -1287,7 +1250,7 @@ namespace YuukoProtocol
             await SendAsync(DataType.NoSession, msg.FromId, msg.RequestId, msg.SessionId ?? "", 0, null).ConfigureAwait(false);
         }
 
-        // ── The send/wait/heal loop ───────────────────────────────────────────────
+        //The send/wait/heal loop
 
         private sealed record ExchangeResult(byte[]? Plain, bool Unreachable, string? Failure);
 
@@ -1410,7 +1373,7 @@ namespace YuukoProtocol
             return _transport.PublishAsync(_opts.DataTopic, packet, ct);
         }
 
-        // ── Presence ─────────────────────────────────────────────────────────────
+        //Presence
 
         private TimeSpan PresenceWindow =>
             _opts.PresenceTimeout > TimeSpan.Zero ? _opts.PresenceTimeout
@@ -1445,7 +1408,7 @@ namespace YuukoProtocol
             try { await PingAsync(peer, ct).ConfigureAwait(false); } catch { }
         }
 
-        // ── Housekeeping ─────────────────────────────────────────────────────────
+        //Housekeeping
 
         // Keep the handshake's trust list in step with the device directory. The directory is the
         // source of truth for anything it added; trust added by hand elsewhere is left alone.
@@ -1500,7 +1463,7 @@ namespace YuukoProtocol
             _recent.Clear();
         }
 
-        // ── Per-exchange state ───────────────────────────────────────────────────
+        //Per-exchange state
 
         private sealed class Pending
         {
@@ -1535,7 +1498,7 @@ namespace YuukoProtocol
             public RecentCommand(DateTimeOffset expires) => ExpiresUtc = expires;
         }
 
-        // ── Wire types ─────────────────────────────────────────────────────────────
+        //Wire types
 
         // The numbers are part of the wire format: do not renumber.
         private enum DataType { Req = 0, Resp = 1, Cmd = 2, Ack = 3, NoSession = 4, Close = 5 }

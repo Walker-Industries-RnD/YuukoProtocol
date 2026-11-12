@@ -43,7 +43,21 @@ namespace YuukoProtocol.Dogma
 
         }
 
-        // ── making documents ─────────────────────────────────────────────────────
+        //Limits you can change (Nothing is limited unless you say so)
+
+        //How many documents this device keeps (No limit by default)
+        public static int MaxDocs { get => DocSync.MaxDocs; set => DocSync.MaxDocs = value; }
+
+        //How many labels (text fields) one document may have (256 by default)
+        public static int MaxLabels { get => DocSync.MaxLabels; set => DocSync.MaxLabels = value; }
+
+        //A change bigger than this is sent in pieces and put back together on the other side (500 KB by default), so a document can be any size
+        public static int ChunkBytes { get => DocSync.ChunkBytes; set => DocSync.ChunkBytes = value; }
+
+        //The biggest thing that is put back together (128 MB by default), so another device can't fill your memory by promising a huge one
+        public static long MaxChunkedBytes { get => DocSync.MaxChunkedBytes; set => DocSync.MaxChunkedBytes = value; }
+
+        //Making documents
 
         //A new empty Yjs document with a RANDOM client id. Always make your documents with this, never plain new Doc().
         //Two traps in YDotNet 0.6 that this avoids, both silent: (1) the DEFAULT id comes from a tiny range, and about 6 in 100 pairs of documents made
@@ -58,7 +72,7 @@ namespace YuukoProtocol.Dogma
             return new Doc(new YDotNet.Document.Options.DocOptions { Id = id == 0 ? 1u : id });
         }
 
-        // ── the document ─────────────────────────────────────────────────────────
+        //The document
 
         //Convert to Yuuko Definition later
         public class SharedDocs
@@ -91,7 +105,9 @@ namespace YuukoProtocol.Dogma
 
             void UpdateHashAndDate()
             {
-                ContentHash = TextLabels.Count == 0 ? 0 : xxHash64.ComputeHash(System.Text.Encoding.UTF8.GetBytes(ReadDoc()));
+                //The hash library can't take no bytes, and a document with only empty text is a real thing (A label that was just made, or emptied)
+                var Bytes = System.Text.Encoding.UTF8.GetBytes(TextLabels.Count == 0 ? "" : ReadDoc());
+                ContentHash = Bytes.Length == 0 ? 0 : xxHash64.ComputeHash(Bytes);
                 LastUpdated = DateTime.UtcNow;
             }
 
@@ -298,7 +314,7 @@ namespace YuukoProtocol.Dogma
             }
         }
 
-        // ── the one-line helpers (for a single node per app) ─────────────────────
+        //The one-line helpers (for a single node per app)
 
         //The sync engine for this app's node (set by Start).
         public static DocSync? Default { get; private set; }

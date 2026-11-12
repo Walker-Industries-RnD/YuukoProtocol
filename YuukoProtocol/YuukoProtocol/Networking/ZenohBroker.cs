@@ -41,42 +41,40 @@ using ZEncoding = Zenoh.Encoding;
 
 namespace YuukoProtocol
 {
-    // ── Configuration ────────────────────────────────────────────────────────
+    //Configuration
 
     public enum ZenohSessionMode
     {
-        /// <summary>Full mesh participant — can talk directly to other peers, no router required.</summary>
+        //Full mesh participant — can talk directly to other peers, no router required.
         Peer,
 
-        /// <summary>Connects through a zenohd router only; lighter weight, good for constrained devices.</summary>
+        //Connects through a zenohd router only; lighter weight, good for constrained devices.
         Client
     }
 
-    /// <summary>Connection + behavior tuning for <see cref="ZenohBroker"/>.</summary>
+    //Connection + behavior tuning for ZenohBroker.
     public sealed class ZenohBrokerOptions
     {
         public ZenohSessionMode Mode { get; set; } = ZenohSessionMode.Peer;
 
-        /// <summary>e.g. "tcp/192.168.1.10:7447". Leave empty for multicast peer discovery.</summary>
+        //e.g. "tcp/192.168.1.10:7447". Leave empty for multicast peer discovery.
         public List<string> ConnectEndpoints { get; } = new();
 
-        /// <summary>Endpoints this session should listen on, e.g. "tcp/0.0.0.0:7447".</summary>
+        //Endpoints this session should listen on, e.g. "tcp/0.0.0.0:7447".
         public List<string> ListenEndpoints { get; } = new();
 
-        /// <summary>Zenoh query timeout for RequestAsync, in milliseconds.</summary>
+        //Zenoh query timeout for RequestAsync, in milliseconds.
         public ulong GetTimeoutMs { get; set; } = 2500;
 
-        /// <summary>Reply channel capacity for RequestAsync.</summary>
+        //Reply channel capacity for RequestAsync.
         public uint GetChannelCapacity { get; set; } = 64;
 
-        /// <summary>
-        /// If true, subscribing to a topic also declares a Queryable that answers other
-        /// peers' RequestAsync/Get() calls with this broker's retained packets.
-        /// Disable on read-only / thin clients that shouldn't serve as a storage node.
-        /// </summary>
+        //If true, subscribing to a topic also declares a Queryable that answers other
+        //peers' RequestAsync/Get() calls with this broker's retained packets.
+        //Disable on read-only / thin clients that shouldn't serve as a storage node.
         public bool AnswerQueries { get; set; } = true;
 
-        // ── TLS (transport-layer security) ─────────────────────────────────────
+        //TLS (transport-layer security)
         // Optional link encryption underneath EclipseBroker's per-peer AES-256-GCM.
         // Toggle with EnableTls. When on, tcp/ endpoints are switched to tls/ and the
         // certificate material below is applied. Zenoh's rustls stack negotiates
@@ -84,34 +82,28 @@ namespace YuukoProtocol
 
         //I might remove 1.2 functionality and enforce PQC Encryption, IDK yet
 
-        /// <summary>
-        /// Master switch: enable/disable TLS on all Zenoh links. <b>Default on.</b> If you give no certificate files,
-        /// <see cref="ZenohBroker.Open"/> checks for this device's Yuuko certificate (<see cref="TlsDirectory"/>) and creates
-        /// one if it is missing (see <see cref="YuukoTls"/>). Turning TLS off also brings back LAN auto-discovery.
-        /// </summary>
+        //Master switch: enable/disable TLS on all Zenoh links. Default on. If you give no certificate files,
+        //Open checks for this device's Yuuko certificate (TlsDirectory) and creates
+        //one if it is missing (see YuukoTls). Turning TLS off also brings back LAN auto-discovery.
         public bool EnableTls { get; set; } = true;
 
-        /// <summary>
-        /// The Yuuko certificate behind the TLS files in these options. Set by <see cref="YuukoTls.Apply"/> and by
-        /// <see cref="PairingCode.ToTransportOptions"/>; <see cref="ZenohBroker.Certificate"/> reports it, which is how a device
-        /// knows which certificate authority it belongs to (and can take the group's when it pairs).
-        /// </summary>
+        //The Yuuko certificate behind the TLS files in these options. Set by Apply and by
+        //ToTransportOptions; Certificate reports it, which is how a device
+        //knows which certificate authority it belongs to (and can take the group's when it pairs).
         public YuukoCertificate? TlsCertificate { get; set; }
 
-        /// <summary>Name for the automatic certificate (and its folder). Default: this machine's name.</summary>
+        //Name for the automatic certificate (and its folder). Default: this machine's name.
         public string? DeviceName { get; set; }
 
-        /// <summary>Where the automatic certificate lives. Default: <see cref="YuukoTls.DefaultDirectory"/>.</summary>
+        //Where the automatic certificate lives. Default: DefaultDirectory.
         public string? TlsDirectory { get; set; }
 
-        /// <summary>
-        /// In peer mode with no <see cref="ListenEndpoints"/>, listen on the first FREE port from 7447 up (and fail loudly if
-        /// there is none) instead of leaving it to chance. Zenoh itself says nothing when a port is already taken: the
-        /// session opens and nobody can reach it. The port actually used is <see cref="ZenohBroker.ListenEndpoints"/>.
-        /// </summary>
+        //In peer mode with no ListenEndpoints, listen on the first FREE port from 7447 up (and fail loudly if
+        //there is none) instead of leaving it to chance. Zenoh itself says nothing when a port is already taken: the
+        //session opens and nobody can reach it. The port actually used is ListenEndpoints.
         public bool AutoListen { get; set; } = true;
 
-        /// <summary>A copy, so opening a broker never changes the options object you passed in.</summary>
+        //A copy, so opening a broker never changes the options object you passed in.
         public ZenohBrokerOptions Clone()
         {
             var c = new ZenohBrokerOptions
@@ -129,44 +121,40 @@ namespace YuukoProtocol
             return c;
         }
 
-        /// <summary>Path to the PEM root CA used to verify the peer's certificate.</summary>
+        //Path to the PEM root CA used to verify the peer's certificate.
         public string? TlsRootCaCertificate { get; set; }
 
-        /// <summary>Path to the PEM certificate this node presents when listening.</summary>
+        //Path to the PEM certificate this node presents when listening.
         public string? TlsListenCertificate { get; set; }
 
-        /// <summary>Path to the PEM private key for <see cref="TlsListenCertificate"/>.</summary>
+        //Path to the PEM private key for TlsListenCertificate.
         public string? TlsListenPrivateKey { get; set; }
 
-        /// <summary>Path to the PEM certificate this node presents when connecting (mTLS).</summary>
+        //Path to the PEM certificate this node presents when connecting (mTLS).
         public string? TlsConnectCertificate { get; set; }
 
-        /// <summary>Path to the PEM private key for <see cref="TlsConnectCertificate"/>.</summary>
+        //Path to the PEM private key for TlsConnectCertificate.
         public string? TlsConnectPrivateKey { get; set; }
 
-        /// <summary>
-        /// Require the peer to present a valid certificate (mutual TLS). <b>Default on</b>: a device that cannot show a
-        /// certificate from a CA this device trusts is turned away at the TLS layer, before any Yuuko message is read.
-        /// A device being paired gets in with the temporary certificate in its pairing code.
-        /// </summary>
+        //Require the peer to present a valid certificate (mutual TLS). Default on: a device that cannot show a
+        //certificate from a CA this device trusts is turned away at the TLS layer, before any Yuuko message is read.
+        //A device being paired gets in with the temporary certificate in its pairing code.
         public bool TlsEnableMutual { get; set; } = true;
 
-        /// <summary>Verify the peer certificate's name on connect. Off eases self-signed/dev setups.</summary>
+        //Verify the peer certificate's name on connect. Off eases self-signed/dev setups.
         public bool TlsVerifyNameOnConnect { get; set; } = false;
 
-        /// <summary>
-        /// With <see cref="EnableTls"/> on, Zenoh's multicast scouting, gossip, and the default random
-        /// plaintext listener are switched OFF unless this is true. Left on, peers discover each other
-        /// over multicast and dial each other's plain-TCP listeners, which walks around the TLS
-        /// listener (and its client-certificate check) entirely. That was observed in testing: a
-        /// client with no certificate got a plaintext link opened TO it by the provider.
-        /// The price of closing it: with TLS on, devices only link through the explicit
-        /// ConnectEndpoints / ListenEndpoints you give them, so there is no automatic LAN discovery.
-        /// </summary>
+        //With EnableTls on, Zenoh's multicast scouting, gossip, and the default random
+        //plaintext listener are switched OFF unless this is true. Left on, peers discover each other
+        //over multicast and dial each other's plain-TCP listeners, which walks around the TLS
+        //listener (and its client-certificate check) entirely. That was observed in testing: a
+        //client with no certificate got a plaintext link opened TO it by the provider.
+        //The price of closing it: with TLS on, devices only link through the explicit
+        //ConnectEndpoints / ListenEndpoints you give them, so there is no automatic LAN discovery.
         public bool AllowPlaintextDiscovery { get; set; } = false;
     }
 
-    // ── ZenohBroker ──────────────────────────────────────────────────────────
+    //ZenohBroker
 
     public sealed class ZenohBroker : IYuukoApi, IDisposable
     {
@@ -189,16 +177,14 @@ namespace YuukoProtocol
             Certificate = certificate;
         }
 
-        /// <summary>
-        /// The endpoints this broker listens on, as <c>tcp/host:port</c> (with TLS on, peers reach them over tls automatically).
-        /// If you did not choose one this is the free port that was picked. Empty if this broker only connects out.
-        /// </summary>
+        //The endpoints this broker listens on, as tcp/host:port (with TLS on, peers reach them over tls automatically).
+        //If you did not choose one this is the free port that was picked. Empty if this broker only connects out.
         public IReadOnlyList<string> ListenEndpoints => _opts.ListenEndpoints.ToList();
 
-        /// <summary>The Yuuko certificate in use when it was created or found automatically (null if you supplied your own files or TLS is off).</summary>
+        //The Yuuko certificate in use when it was created or found automatically (null if you supplied your own files or TLS is off).
         public YuukoCertificate? Certificate { get; }
 
-        /// <summary>First free TCP port at or above <paramref name="first"/>. Throws if none of the next <paramref name="tries"/> is free.</summary>
+        //First free TCP port at or above first. Throws if none of the next tries is free.
         public static int FindFreePort(int first = 7447, int tries = 20)
         {
             for (int p = first; p < first + tries && p <= 65535; p++)
@@ -215,13 +201,11 @@ namespace YuukoProtocol
             throw new InvalidOperationException($"ZenohBroker: no free TCP port between {first} and {first + tries - 1}.");
         }
 
-        // ── Factory ──────────────────────────────────────────────────────────
+        //Factory
 
-        /// <summary>
-        /// Opens a Zenoh session and returns a ready-to-use broker.
-        /// Throws if the underlying zenoh-c session can't be opened (bad config,
-        /// no reachable peer/router in Client mode, native library missing, etc).
-        /// </summary>
+        //Opens a Zenoh session and returns a ready-to-use broker.
+        //Throws if the underlying zenoh-c session can't be opened (bad config,
+        //no reachable peer/router in Client mode, native library missing, etc).
         public static ZenohBroker Open(ZenohBrokerOptions? options = null)
         {
             options = (options ?? new ZenohBrokerOptions()).Clone();   // never change the caller's object
@@ -320,7 +304,7 @@ namespace YuukoProtocol
             return ",\"transport\":{\"link\":{\"tls\":{" + string.Join(",", fields) + "}}}";
         }
 
-        // ── IYuukoApi: Publish ──────────────────────────────────────────────
+        //IYuukoApi: Publish
 
         public Task PublishAsync(string topic, YuukoPacket packet, CancellationToken ct = default)
         {
@@ -340,7 +324,7 @@ namespace YuukoProtocol
             return Task.CompletedTask;
         }
 
-        // ── IYuukoApi: Subscribe / Unsubscribe ──────────────────────────────
+        //IYuukoApi: Subscribe / Unsubscribe
 
         public Task SubscribeAsync(string topic, Func<YuukoPacket, Task> handler, CancellationToken ct = default)
         {
@@ -366,7 +350,7 @@ namespace YuukoProtocol
             return Task.CompletedTask;
         }
 
-        // ── IYuukoApi: Request (Zenoh Get / query-reply) ────────────────────
+        //IYuukoApi: Request (Zenoh Get / query-reply)
 
         public Task<IReadOnlyList<YuukoPacket>> RequestAsync(string topic, CancellationToken ct = default)
         {
@@ -420,7 +404,7 @@ namespace YuukoProtocol
             }, ct);
         }
 
-        // ── Internals: declare-once publishers / subscribers / queryables ───
+        //Internals: declare-once publishers / subscribers / queryables
 
         private Publisher GetOrDeclarePublisher(string topic)
         {
@@ -552,7 +536,7 @@ namespace YuukoProtocol
             store[packet.Name] = packet;
         }
 
-        // ── Lifecycle ────────────────────────────────────────────────────────
+        //Lifecycle
 
         private void ThrowIfDisposed()
         {

@@ -6,6 +6,7 @@ using System.Dynamic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using WISecureData;
 using YuukoProtocol;
@@ -67,6 +68,21 @@ namespace YuukoProtocol.Dogma
         static YuukoIdentity MyIdentity;
         static ZenohBroker MyTransport;
         static readonly List<string> KnownEndpoints = new();
+        static readonly SemaphoreSlim NodeLock = new(1, 1);          //Pairing and Reconnect can both build the node again, never at the same time
+
+        //Reconnect.cs sets these: the port we listen on every time (So the address a paired device remembers stays right) and the addresses to dial
+        internal static int ListenPort;
+        internal static byte[] GroupKeyBytes => MyGroupKey;
+        internal static void RememberEndpoint(string Endpoint) { lock (KnownEndpoints) { if (!KnownEndpoints.Contains(Endpoint)) KnownEndpoints.Add(Endpoint); } }
+        internal static Task Rebuild() => StartMainNode();
+
+        //Where other devices reach this one, tcp/host:port (Nothing if it has no network address yet)
+        internal static string? MyEndpoint()
+        {
+            var Listening = MyTransport?.ListenEndpoints.FirstOrDefault();
+            if (Listening is null || !int.TryParse(Listening[(Listening.LastIndexOf(':') + 1)..], out var Port)) return null;
+            return Reconnect.HostEndpoint(Port);
+        }
 
         //Let's assume name is formatted as (DeviceType)(DeviceName)
         public static async Task CreateNode(
@@ -85,7 +101,16 @@ namespace YuukoProtocol.Dogma
 
             //Let's assume we encrypted and protected our savelist with JSONDataHandler
             MyDirectory = new DeviceDirectory(TrustedDeviceKey, TrustedDevices);
-            MyIdentity = YuukoIdentity.LoadOrCreate(DeviceID, DeviceName);
+
+            //The Node password should NOT be the user password, it should be a separate password encrypted by the user's password and saved somewhere
+            //It locks the identity file (This device's private keys): a new file is saved locked, and a file from before is locked the first time it is loaded with one
+            string Secret;
+            try { Secret = Password.ConvertToString(); }
+            catch (Exception) { throw new ArgumentException("CreateNode needs the node password (A SecureData made with new SecureData(Encoding.UTF8.GetBytes(...))).", nameof(Password)); }
+
+            if (Secret is null || Secret.Length < 8) throw new ArgumentException("The node password has to be at least 8 characters.", nameof(Password));
+
+            MyIdentity = YuukoIdentity.LoadOrCreate(DeviceID, DeviceName, Secret);
 
             await StartMainNode();
         }
@@ -126,6 +151,13 @@ namespace YuukoProtocol.Dogma
 
         static async Task StartMainNode()
         {
+            await NodeLock.WaitAsync();
+            try { await BuildMainNode(); }
+            finally { NodeLock.Release(); }
+        }
+
+        static async Task BuildMainNode()
+        {
             //Get rid of the old one first, it holds the port
             StopMainNode();
 
@@ -140,10 +172,21 @@ namespace YuukoProtocol.Dogma
             var BrokerSetup = new ZenohBrokerOptions();
             BrokerSetup.DeviceName = MyDeviceName;
 
-            //Devices we paired with, so we can find them again
-            foreach (var Endpoint in KnownEndpoints)
+            //The same port every time. If someone else holds it we take any free one, and that is the address from now on
+            if (ListenPort > 0)
             {
-                BrokerSetup.ConnectEndpoints.Add(Endpoint);
+                try { ZenohBroker.FindFreePort(ListenPort, 1); }
+                catch (Exception) { ListenPort = ZenohBroker.FindFreePort(); }
+                BrokerSetup.ListenEndpoints.Add("tcp/0.0.0.0:" + ListenPort);
+            }
+
+            //Devices we paired with, so we can find them again
+            lock (KnownEndpoints)
+            {
+                foreach (var Endpoint in KnownEndpoints)
+                {
+                    BrokerSetup.ConnectEndpoints.Add(Endpoint);
+                }
             }
 
             var transport = ZenohBroker.Open(BrokerSetup);

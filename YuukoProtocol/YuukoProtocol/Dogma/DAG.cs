@@ -32,11 +32,11 @@
 //
 // Rules: a file only one side changed follows that side. A deleted file is moved to .yuuko/trash, never erased. If both sides changed the
 // same file the newest wins on both devices and the other one is kept next to it as "name (conflict 1a2b3c4d).ext", so nothing is lost and
-// both devices end up with the same files. A download that stops half way continues where it stopped the next time (.yuuko/partial).
+// both devices end up with the same files. A download that stops half way continues where it stopped the next time you sync (.yuuko/partial): nothing starts it by itself, so call DAG.SyncFolder again, or DAG.ResumeFolder to repeat it until nothing fails.
 // Devices only get files from folders they are listed for, and only files that are in the folder's own list, never a path they make up.
 //
-// What it does NOT do: it syncs files only (empty folders aren't kept), it doesn't follow shortcuts or symlinks, a folder is at most 4000
-// files and a file at most 4 GB, the baseline is one per folder (not one per device), and it doesn't merge the inside of a file.
+// What it does NOT do: it syncs files only (empty folders aren't kept), it doesn't follow shortcuts or symlinks, a folder has no limit on files or
+// file size unless you set DAG.MaxFiles / DAG.MaxFileBytes (the list of files is asked for a page at a time), the baseline is one per folder (not one per device), and it doesn't merge the inside of a file.
 
 using Pariah_Cybersecurity;
 using System;
@@ -360,7 +360,7 @@ namespace YuukoProtocol.Dogma
         //Logic to handle updating repos (Including continuing pushes)
         //I don't think we need tomes anymore
 
-        //Check for updates (On this device, on other device), Compare difference, Update (Will auto continue update if it was stopped)
+        //Check for updates (On this device, on other device), Compare difference, Update (A stopped update carries on when you sync again, see DAG.ResumeFolder)
         //Check if folder exists on other device 
         //Maybe a method to auto run the syncer every x minutes? And maybe a way to exclude files over a specific size
 
@@ -377,7 +377,7 @@ namespace YuukoProtocol.Dogma
                 return false;
             }
 
-            catch (Exception ex)
+            catch (Exception)
             {
                 return false;
             }

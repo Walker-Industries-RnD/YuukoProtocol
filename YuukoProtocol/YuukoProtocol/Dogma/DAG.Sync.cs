@@ -2,7 +2,7 @@
 //
 // Commands between devices (All of them are checked against the folder's device list first):
 //   dag.exists   Do you share this folder?
-//   dag.manifest Send me your list of files (path, hash, size, time)
+//   dag.manifest Send me your list of files (path, hash, size, time), a page at a time
 //   dag.chunk    Send me chunk number N of this file
 //   dag.notice   This folder changed here, come and get it
 
@@ -66,8 +66,24 @@ namespace YuukoProtocol.Dogma
         public static bool AutoSync { get; set; } = true;
 
         public const int ChunkSize = 256 * 1024;
-        public const int MaxFiles = 4000;
-        public const long MaxFileBytes = 4L * 1024 * 1024 * 1024;
+
+        //How many files a folder may have, and how big one file may be. Nothing, unless you set it (A file over MaxFileBytes is left out of the sync)
+        static int _MaxFiles = int.MaxValue;
+        public static int MaxFiles
+        {
+            get => _MaxFiles;
+            set => _MaxFiles = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), "At least 1 file.");
+        }
+
+        static long _MaxFileBytes = long.MaxValue;
+        public static long MaxFileBytes
+        {
+            get => _MaxFileBytes;
+            set => _MaxFileBytes = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), "At least 1 byte.");
+        }
+
+        //How much of a folder's list of files goes in one answer (bytes), the rest is asked for page by page (Tests make it small)
+        internal static int ManifestPageBytes = 500_000;
 
         internal static EclipseBroker? Node;
         static Syncer? _Default;
@@ -117,8 +133,14 @@ namespace YuukoProtocol.Dogma
 
         #region Update
 
-        //Get what another device has (Continues by itself if an earlier one stopped)
+        //Get what another device has. If an earlier one stopped, a file that was half done carries on where it stopped, but only when YOU call this again
         public static Task<SyncResult> SyncFolder(string DeviceToSyncFrom, string UUID) => Default.Sync(DeviceToSyncFrom, UUID);
+
+        //How long ResumeFolder waits before it tries again (Tests make it short)
+        internal static TimeSpan ResumePause = TimeSpan.FromSeconds(1);
+
+        //The same, and if some files failed it tries again (Up to Tries syncs, files that were done stay done), so a sync that stopped half way is pushed to the end
+        public static Task<SyncResult> ResumeFolder(string DeviceToSyncFrom, string UUID, int Tries = 3) => Default.Resume(DeviceToSyncFrom, UUID, Tries);
 
         //Tell every connected device this folder changed here, the ones that share it come and get it
         public static Task BroadcastUpdate(string UUID) => Default.Broadcast(UUID);
@@ -143,7 +165,20 @@ namespace YuukoProtocol.Dogma
             readonly ConcurrentDictionary<string, string> Again = new();
             readonly ConcurrentDictionary<string, Dictionary<string, FileState>> Last = new();   //The newest scan, so files that didn't change aren't read again
             readonly SemaphoreSlim RepoLock = new(1, 1);
+            readonly ConcurrentDictionary<string, Listing> Listings = new();                      //The list each device is being given, a page at a time (Device/UUID)
+            long _ListingVersion;
             int _Disposed;
+
+            //A folder's list of files as it was when a device asked for the first page, so the pages fit together
+            sealed class Listing
+            {
+                public long Version;
+                public Dictionary<string, FileState> Files = new();
+                public string[] Keys = Array.Empty<string>();
+                public DateTime At = DateTime.UtcNow;
+            }
+
+            internal int ManifestPagesServed;                                                      //For tests
 
             public Syncer(EclipseBroker Node, SecureData? Key)
             {
@@ -241,22 +276,64 @@ namespace YuukoProtocol.Dogma
                 return RootHash(Remote) != RootHash(Local);
             }
 
+            //The other device's list of files, a page at a time. If its folder changes between two pages the pages wouldn't fit together, so we start again
             async Task<Dictionary<string, FileState>> RemoteFiles(string Device, string UUID)
             {
-                var Reply = await Net.SendCommandAsync(Device, "dag.manifest", Encoding.UTF8.GetBytes(UUID));
-                if (!Reply.IsOk) throw new InvalidOperationException($"{Device} said {Reply.Status}: {Reply.Message}");
-
-                //Whatever they sent is checked before it's trusted, a path from another device is never used as it is
-                var Files = JsonSerializer.Deserialize<Dictionary<string, FileState>>(Reply.Result) ?? new();
-                if (Files.Count > MaxFiles) throw new InvalidDataException("That device's folder has too many files.");
-
-                foreach (var (Path_, State) in Files)
+                for (int Attempt = 0; Attempt < 3; Attempt++)
                 {
-                    if (!SafeRelative(Path_) || State.Size < 0 || State.Size > MaxFileBytes || !IsHash(State.Hash))
-                        throw new InvalidDataException("That device sent a file list we can't trust.");
+                    var All = new Dictionary<string, FileState>(StringComparer.Ordinal);
+                    string After = "";
+                    long Version = 0;
+                    var Changed = false;
+
+                    while (true)
+                    {
+                        var Ask = After.Length == 0
+                            ? Encoding.UTF8.GetBytes(UUID)
+                            : Encoding.UTF8.GetBytes(new JsonObject { ["u"] = UUID, ["after"] = After, ["ver"] = Version }.ToJsonString());
+
+                        var Reply = await Net.SendCommandAsync(Device, "dag.manifest", Ask);
+                        if (!Reply.IsOk)
+                        {
+                            if (After.Length > 0 && Reply.Message == "changed") { Changed = true; break; }
+                            throw new InvalidOperationException($"{Device} said {Reply.Status}: {Reply.Message}");
+                        }
+
+                        //Whatever they sent is checked before it's trusted, a path from another device is never used as it is
+                        Dictionary<string, FileState> Page;
+                        string? Next;
+                        try
+                        {
+                            var Body = JsonNode.Parse(Reply.Result)?.AsObject() ?? throw new InvalidDataException();
+                            Page = Body["files"].Deserialize<Dictionary<string, FileState>>() ?? throw new InvalidDataException();
+                            Next = (string?)Body["next"];
+                            Version = (long?)Body["ver"] ?? throw new InvalidDataException();
+                        }
+                        catch (Exception ex) when (ex is JsonException or InvalidDataException or InvalidCastException or InvalidOperationException)
+                        {
+                            throw new InvalidDataException("That device sent a file list we can't trust.");
+                        }
+
+                        foreach (var (Path_, State) in Page)
+                        {
+                            if (!SafeRelative(Path_) || string.CompareOrdinal(Path_, After) <= 0 || State is null || State.Size < 0 || State.Size > MaxFileBytes || !IsHash(State.Hash))
+                                throw new InvalidDataException("That device sent a file list we can't trust.");
+
+                            if (All.Count >= MaxFiles) throw new InvalidDataException("That device's folder has too many files.");
+                            All[Path_] = State;
+                        }
+
+                        if (Next is null) return All;
+
+                        //The next page has to start further on, or we'd ask for the same one forever
+                        if (Page.Count == 0 || string.CompareOrdinal(Next, After) <= 0 || !Page.ContainsKey(Next)) throw new InvalidDataException("That device sent a file list we can't trust.");
+                        After = Next;
+                    }
+
+                    if (!Changed) break;
                 }
 
-                return Files;
+                throw new IOException("That device's folder kept changing while we were asking for its files. It'll be tried again next time.");
             }
 
             Dictionary<string, FileState> Known(RepositoryEntry Entry) =>
@@ -275,6 +352,27 @@ namespace YuukoProtocol.Dogma
                 await Gate.WaitAsync();
                 try { return await SyncNow(Device, Entry); }
                 finally { Gate.Release(); }
+            }
+
+            //Sync, and sync again while something failed (A half done file carries on from the last whole piece, files that arrived are not fetched again)
+            public async Task<SyncResult> Resume(string Device, string UUID, int Tries)
+            {
+                if (Tries < 1) throw new ArgumentOutOfRangeException(nameof(Tries), "At least 1 try.");
+
+                var All = await Sync(Device, UUID);
+
+                for (int Try = 1; Try < Tries && All.Errors.Count > 0; Try++)
+                {
+                    await Task.Delay(ResumePause);
+                    var More = await Sync(Device, UUID);
+
+                    More.Downloaded += All.Downloaded;
+                    More.Deleted += All.Deleted;
+                    foreach (var Path_ in All.Conflicts.Where(c => !More.Conflicts.Contains(c))) More.Conflicts.Add(Path_);
+                    All = More;
+                }
+
+                return All;
             }
 
             async Task<SyncResult> SyncNow(string Device, RepositoryEntry Entry)
@@ -466,17 +564,79 @@ namespace YuukoProtocol.Dogma
             CommandResult HandleExists(CommandContext Context) =>
                 Allowed(Context, Context.PayloadAsString(), out _) ? CommandResult.Ok() : CommandResult.Denied("not shared with you");
 
+            //The first page is just the folder's UUID. The next ones say where the last page ended and which list they belong to
             async Task<CommandResult> HandleManifest(CommandContext Context)
             {
-                if (!Allowed(Context, Context.PayloadAsString(), out var Entry)) return CommandResult.Denied("not shared with you");
+                string UUID = Context.PayloadAsString(), After = "";
+                long Wanted = 0;
+
+                if (UUID.StartsWith('{'))
+                {
+                    try
+                    {
+                        var Ask = JsonNode.Parse(UUID)!;
+                        UUID = (string?)Ask["u"] ?? "";
+                        After = (string?)Ask["after"] ?? "";
+                        Wanted = (long?)Ask["ver"] ?? 0;
+                    }
+                    catch (Exception ex) when (ex is JsonException or InvalidCastException or InvalidOperationException) { return CommandResult.Error("malformed"); }
+
+                    if (After.Length is 0 or > 4096) return CommandResult.Error("malformed");
+                }
+
+                if (!Allowed(Context, UUID, out var Entry)) return CommandResult.Denied("not shared with you");
+                var Key_ = Context.Origin + "/" + UUID;
 
                 try
                 {
-                    var Files = await Task.Run(() => Scan(Entry.ParentPath, Known(Entry)));
-                    Last[Entry.UUID] = Files;
+                    Listing This;
 
-                    var Json = JsonSerializer.SerializeToUtf8Bytes(Files);
-                    return Json.Length > 900_000 ? CommandResult.Error("the file list is too big") : CommandResult.Ok(Json);
+                    if (After.Length == 0)
+                    {
+                        var Files = await Task.Run(() => Scan(Entry.ParentPath, Known(Entry)));
+                        Last[Entry.UUID] = Files;
+
+                        //Lists nobody finished asking for are forgotten
+                        var Cutoff = DateTime.UtcNow.AddMinutes(-5);
+                        foreach (var Old in Listings.Where(l => l.Value.At < Cutoff).Select(l => l.Key).ToList()) Listings.TryRemove(Old, out _);
+                        if (Listings.Count >= 256 && !Listings.ContainsKey(Key_)) return CommandResult.Error("busy");
+
+                        This = new Listing { Version = Interlocked.Increment(ref _ListingVersion), Files = Files, Keys = Files.Keys.OrderBy(k => k, StringComparer.Ordinal).ToArray() };
+                        Listings[Key_] = This;
+                    }
+                    else if (!Listings.TryGetValue(Key_, out This!) || This.Version != Wanted) return CommandResult.Error("changed");
+
+                    This.At = DateTime.UtcNow;
+                    Interlocked.Increment(ref ManifestPagesServed);
+
+                    //From the first path after the one the last page ended with, as many as fit in one answer
+                    int At = 0;
+                    if (After.Length > 0)
+                    {
+                        var Found = Array.BinarySearch(This.Keys, After, StringComparer.Ordinal);
+                        At = Found >= 0 ? Found + 1 : ~Found;
+                    }
+
+                    var Page = new JsonObject();
+                    string? Next = null;
+                    int Bytes = 0;
+
+                    for (; At < This.Keys.Length; At++)
+                    {
+                        var Path_ = This.Keys[At];
+                        int Size = Path_.Length + 140;
+
+                        if (Page.Count > 0 && Bytes + Size > ManifestPageBytes) { Next = This.Keys[At - 1]; break; }
+
+                        Page[Path_] = JsonSerializer.SerializeToNode(This.Files[Path_]);
+                        Bytes += Size;
+                    }
+
+                    //That was the last page
+                    if (Next is null) Listings.TryRemove(Key_, out _);
+
+                    var Reply = new JsonObject { ["files"] = Page, ["next"] = Next, ["ver"] = This.Version };
+                    return CommandResult.Ok(Encoding.UTF8.GetBytes(Reply.ToJsonString()));
                 }
                 catch (Exception ex) { return CommandResult.Error(ex.Message); }
             }

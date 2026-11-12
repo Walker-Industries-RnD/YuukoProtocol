@@ -24,18 +24,18 @@ namespace YuukoProtocol
 {
     public enum CertificateState
     {
-        /// <summary>No certificate files here.</summary>
+        //No certificate files here.
         Missing,
-        /// <summary>A certificate exists, is valid, and has more than the renewal margin left.</summary>
+        //A certificate exists, is valid, and has more than the renewal margin left.
         Valid,
-        /// <summary>Valid now but inside the renewal margin: <see cref="YuukoTls.EnsureCertificate"/> will replace the certificate.</summary>
+        //Valid now but inside the renewal margin: EnsureCertificate will replace the certificate.
         ExpiresSoon,
         Expired,
-        /// <summary>Files exist but cannot be used (damaged, the key does not match, wrong device, not signed by this device's CA).</summary>
+        //Files exist but cannot be used (damaged, the key does not match, wrong device, not signed by this device's CA).
         Invalid,
     }
 
-    /// <summary>A device's certificate files, ready to give to <see cref="ZenohBrokerOptions"/>.</summary>
+    //A device's certificate files, ready to give to ZenohBrokerOptions.
     public sealed record YuukoCertificate(
         string Directory,
         string DeviceId,
@@ -56,7 +56,7 @@ namespace YuukoProtocol
 
         private const string CaCertFile = "ca.pem", CaKeyFile = "ca.key", CertFile = "cert.pem", KeyFile = "key.pem", TrustFile = "trust.pem";
 
-        /// <summary>Where a device's certificate lives unless you say otherwise: the user's local app-data folder.</summary>
+        //Where a device's certificate lives unless you say otherwise: the user's local app-data folder.
         public static string DefaultDirectory(string deviceId)
         {
             string root = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
@@ -64,7 +64,7 @@ namespace YuukoProtocol
             return Path.Combine(root, "YuukoProtocol", "tls", Sanitize(deviceId));
         }
 
-        /// <summary>Is there a usable Yuuko certificate in <paramref name="directory"/>? Changes nothing.</summary>
+        //Is there a usable Yuuko certificate in directory? Changes nothing.
         public static CertificateState Check(string directory, string deviceId, TimeSpan? renewBefore = null)
         {
             var margin = renewBefore ?? DefaultRenewBefore;
@@ -89,12 +89,10 @@ namespace YuukoProtocol
             catch { return CertificateState.Invalid; }
         }
 
-        /// <summary>
-        /// Makes sure <paramref name="directory"/> holds a usable certificate for <paramref name="deviceId"/> and returns it.
-        /// If one is already there and valid it is left alone; if there is none, or it is damaged, expired or about to
-        /// expire, it is created or renewed. A renewal keeps the same CA while that is still valid, so devices that already
-        /// trust this one keep trusting it.
-        /// </summary>
+        //Makes sure directory holds a usable certificate for deviceId and returns it.
+        //If one is already there and valid it is left alone; if there is none, or it is damaged, expired or about to
+        //expire, it is created or renewed. A renewal keeps the same CA while that is still valid, so devices that already
+        //trust this one keep trusting it.
         public static YuukoCertificate EnsureCertificate(string directory, string deviceId, TimeSpan? leafLifetime = null, TimeSpan? renewBefore = null)
         {
             if (string.IsNullOrWhiteSpace(directory)) throw new ArgumentException("directory must be non-empty.", nameof(directory));
@@ -132,10 +130,8 @@ namespace YuukoProtocol
             return result;
         }
 
-        /// <summary>
-        /// Makes <paramref name="peerCaPem"/> (another device's CA certificate, from its pairing code) trusted by this
-        /// device. Returns false if it was already trusted. Throws if it is not a certificate.
-        /// </summary>
+        //Makes peerCaPem (another device's CA certificate, from its pairing code) trusted by this
+        //device. Returns false if it was already trusted. Throws if it is not a certificate.
         public static bool TrustPeer(YuukoCertificate mine, string peerCaPem)
         {
             if (mine is null) throw new ArgumentNullException(nameof(mine));
@@ -143,7 +139,7 @@ namespace YuukoProtocol
             return EnsureTrustContains(mine, peerCaPem);
         }
 
-        /// <summary>Stops trusting a peer CA (by its fingerprint) and rewrites the trust file. Takes effect for NEW connections after the next <c>ZenohBroker.Open</c>.</summary>
+        //Stops trusting a peer CA (by its fingerprint) and rewrites the trust file. Takes effect for NEW connections after the next ZenohBroker.Open.
         public static bool UntrustPeer(YuukoCertificate mine, string caFingerprint)
         {
             var keep = new List<string>();
@@ -158,18 +154,16 @@ namespace YuukoProtocol
             return removed;
         }
 
-        /// <summary>Fingerprints of every CA this device trusts (its own first).</summary>
+        //Fingerprints of every CA this device trusts (its own first).
         public static IReadOnlyList<string> TrustedFingerprints(YuukoCertificate mine) =>
             ReadPems(mine.TrustBundlePath).Select(p => { using var c = X509Certificate2.CreateFromPem(p); return Fingerprint(c); }).ToList();
 
-        /// <summary>
-        /// Points <paramref name="options"/> at this certificate: turns TLS on, presents the certificate when listening
-        /// and when connecting, and trusts the CAs in the trust file.
-        /// </summary>
-        /// <param name="requireClientCertificates">
-        /// Demand a certificate from whoever connects (mutual TLS, the default). A stranger is turned away before a single
-        /// Yuuko message is read. A device being paired gets past it with the short-lived certificate in its pairing code.
-        /// </param>
+        //Points options at this certificate: turns TLS on, presents the certificate when listening
+        //and when connecting, and trusts the CAs in the trust file.
+        //
+        //requireClientCertificates:
+        //Demand a certificate from whoever connects (mutual TLS, the default). A stranger is turned away before a single
+        //Yuuko message is read. A device being paired gets past it with the short-lived certificate in its pairing code.
         public static void Apply(ZenohBrokerOptions options, YuukoCertificate cert, bool requireClientCertificates = true)
         {
             if (options is null) throw new ArgumentNullException(nameof(options));
@@ -184,7 +178,7 @@ namespace YuukoProtocol
             options.TlsVerifyNameOnConnect = false;   // devices are known by key, not by DNS name; the CA check is what counts here
         }
 
-        // ── creation ─────────────────────────────────────────────────────────────
+        //Creation
 
         private static void CreateAll(string dir, string deviceId, TimeSpan leafLifetime)
         {
@@ -239,12 +233,10 @@ namespace YuukoProtocol
             return req.Create(ca, notBefore, notAfter, serial);
         }
 
-        /// <summary>
-        /// A short-lived certificate and key for ONE newcomer, signed by this device's CA, so that device can get through
-        /// mutual TLS to be paired. It goes in the pairing code (<see cref="PairingCode"/>) and stops working at
-        /// <paramref name="lifetime"/>; it is never saved by the device that issues it. (Existing links are not cut when
-        /// it expires, and a certificate only matters to the TLS layer: the Yuuko handshake still has to succeed.)
-        /// </summary>
+        //A short-lived certificate and key for ONE newcomer, signed by this device's CA, so that device can get through
+        //mutual TLS to be paired. It goes in the pairing code (PairingCode) and stops working at
+        //lifetime; it is never saved by the device that issues it. (Existing links are not cut when
+        //it expires, and a certificate only matters to the TLS layer: the Yuuko handshake still has to succeed.)
         public static (string CertPem, string KeyPem) IssueTemporary(YuukoCertificate mine, TimeSpan lifetime)
         {
             if (lifetime <= TimeSpan.Zero || lifetime > TimeSpan.FromHours(2)) throw new ArgumentOutOfRangeException(nameof(lifetime));
@@ -255,7 +247,7 @@ namespace YuukoProtocol
             return (leaf.ExportCertificatePem(), key.ExportPkcs8PrivateKeyPem());
         }
 
-        /// <summary>Saves a pairing code's temporary certificate and key next to this device's own, and returns their paths. <see cref="AdoptGroup"/> removes them again.</summary>
+        //Saves a pairing code's temporary certificate and key next to this device's own, and returns their paths. AdoptGroup removes them again.
         public static (string CertPath, string KeyPath) WritePairingCredentials(YuukoCertificate mine, string certPem, string keyPem)
         {
             string cp = Path.Combine(mine.Directory, "pairing-cert.pem"), kp = Path.Combine(mine.Directory, "pairing-key.pem");
@@ -264,13 +256,11 @@ namespace YuukoProtocol
             return (cp, kp);
         }
 
-        /// <summary>
-        /// Joins another device's group at the TLS layer: this device's CA is replaced by that group's CA (certificate AND
-        /// key, handed over by the device that paired us, over the encrypted session), a new certificate is issued from
-        /// it, and the old CA stops being trusted. From then on every member trusts the same single CA, so adding a device
-        /// never means updating the others. <b>The transport must be opened again to use the new certificate.</b>
-        /// Holding the group's CA key lets this device issue certificates too, so every member is trusted with it.
-        /// </summary>
+        //Joins another device's group at the TLS layer: this device's CA is replaced by that group's CA (certificate AND
+        //key, handed over by the device that paired us, over the encrypted session), a new certificate is issued from
+        //it, and the old CA stops being trusted. From then on every member trusts the same single CA, so adding a device
+        //never means updating the others. The transport must be opened again to use the new certificate.
+        //Holding the group's CA key lets this device issue certificates too, so every member is trusted with it.
         public static YuukoCertificate AdoptGroup(YuukoCertificate mine, string groupCaPem, string groupCaKeyPem)
         {
             if (mine is null) throw new ArgumentNullException(nameof(mine));
@@ -313,7 +303,7 @@ namespace YuukoProtocol
             catch { return false; }
         }
 
-        // ── trust file ───────────────────────────────────────────────────────────
+        //Trust file
 
         private static bool EnsureTrustContains(YuukoCertificate mine, string pem)
         {
@@ -364,13 +354,13 @@ namespace YuukoProtocol
             return list;
         }
 
-        // ── helpers ──────────────────────────────────────────────────────────────
+        //Helpers
 
-        /// <summary>SHA-256 of a certificate, lowercase hex. This is what identifies a CA.</summary>
+        //SHA-256 of a certificate, lowercase hex. This is what identifies a CA.
         public static string Fingerprint(X509Certificate2 cert) =>
             Convert.ToHexString(SHA256.HashData(cert.RawData)).ToLowerInvariant();
 
-        /// <summary>Fingerprint of the first certificate in <paramref name="pem"/>.</summary>
+        //Fingerprint of the first certificate in pem.
         public static string FingerprintOfPem(string pem)
         {
             using var c = X509Certificate2.CreateFromPem(pem);

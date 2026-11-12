@@ -67,7 +67,7 @@ namespace YuukoProtocol.Dogma
         //True if applying it changes nothing.
         public bool IsNoop => _ops.Count == 0 || (_ops.Count == 1 && _ops[0].Kind == OpKind.Retain);
 
-        // ── building ─────────────────────────────────────────────────────────────
+        //Building
 
         //Keep the next n characters as they are.
         public TextOperation Retain(int n)
@@ -122,7 +122,7 @@ namespace YuukoProtocol.Dogma
             TargetLength = (int)t;
         }
 
-        // ── using ────────────────────────────────────────────────────────────────
+        //Using
 
         //The text after the edit. document must be exactly BaseLength characters long.
         public string Apply(string document)
@@ -314,7 +314,7 @@ namespace YuukoProtocol.Dogma
             return false;
         }
 
-        // ── a form that travels: [5, "hi", -3, 12] = keep 5, insert "hi", delete 3, keep 12 ──────────
+        //A form that travels: [5, "hi", -3, 12] = keep 5, insert "hi", delete 3, keep 12
 
         //The operation as JSON: positive numbers keep, negative numbers delete, strings insert.
         public string ToJson()
@@ -376,7 +376,7 @@ namespace YuukoProtocol.Dogma
             }
         }
 
-        // ── equality ─────────────────────────────────────────────────────────────
+        //Equality
 
         public bool Equals(TextOperation? other) => other is not null && _ops.SequenceEqual(other._ops);
         public override bool Equals(object? obj) => Equals(obj as TextOperation);

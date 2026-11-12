@@ -31,7 +31,7 @@
     <PackageReference Include="Zenoh-CS" Version="0.4.1" />
   </ItemGroup>
 
-  <!-- Lets the self-test (YuukoSandbox) call internals, e.g. to model an attacker who holds a stolen long-term key. -->
+  <!-- Lets the self-test (YuukoSandbox) call internals -->
   <ItemGroup>
     <InternalsVisibleTo Include="YuukoSandbox" />
   </ItemGroup>

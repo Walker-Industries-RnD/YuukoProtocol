@@ -17,34 +17,39 @@ using System.Threading.Tasks;
 
 namespace YuukoProtocol
 {
-    /// <summary>
-    /// How a command ended. Values below 100 come from the other device (its handler, or its policy);
-    /// 100 and up are produced locally when no answer came back at all.
-    /// </summary>
+    // What was thrown because the other device's message was not shaped right (as opposed to a bug of ours)
+    internal static class BadInput
+    {
+        public static bool Is(Exception e) =>
+            e is System.Text.Json.JsonException or FormatException or InvalidCastException or InvalidOperationException or ArgumentException or OverflowException;
+    }
+
+    //How a command ended. Values below 100 come from the other device (its handler, or its policy);
+    //100 and up are produced locally when no answer came back at all.
     public enum AckStatus
     {
         Ok = 0,
-        /// <summary>The handler ran and failed, or the request was malformed.</summary>
+        //The handler ran and failed, or the request was malformed.
         Error = 1,
-        /// <summary>The other device's authorizer refused this command from us.</summary>
+        //The other device's authorizer refused this command from us.
         Denied = 2,
-        /// <summary>The other device has no handler registered under that name.</summary>
+        //The other device has no handler registered under that name.
         UnknownCommand = 3,
-        /// <summary>The other device was already running as many commands as it allows.</summary>
+        //The other device was already running as many commands as it allows.
         Busy = 4,
 
-        /// <summary>No answer arrived in time. The command MAY still have run; see <see cref="CommandOptions.Retries"/>.</summary>
+        //No answer arrived in time. The command MAY still have run; see Retries.
         TimedOut = 100,
-        /// <summary>No session could be established (device offline, not trusted, wrong key, banned...).</summary>
+        //No session could be established (device offline, not trusted, wrong key, banned...).
         Unreachable = 101,
     }
 
-    /// <summary>The answer to a command.</summary>
+    //The answer to a command.
     public sealed record CommandAck(AckStatus Status, byte[] Result, string? Message, TimeSpan Elapsed)
     {
         public bool IsOk => Status == AckStatus.Ok;
 
-        /// <summary>True if the other device produced this answer (as opposed to a local timeout / unreachable).</summary>
+        //True if the other device produced this answer (as opposed to a local timeout / unreachable).
         public bool IsFromPeer => (int)Status < 100;
 
         public string ResultAsString() => Encoding.UTF8.GetString(Result);
@@ -53,35 +58,31 @@ namespace YuukoProtocol
             $"{Status}{(Message is null ? "" : ": " + Message)} ({Elapsed.TotalMilliseconds:F0} ms)";
     }
 
-    /// <summary>What a command handler is told about the command it is running.</summary>
+    //What a command handler is told about the command it is running.
     public sealed record CommandContext(string FromId, string Name, byte[] Payload, string RequestId,
         string? OriginId = null, string? ChangeId = null)
     {
-        /// <summary>
-        /// The device that started this command. Same as <see cref="FromId"/> unless it was relayed
-        /// (<see cref="EclipseBroker.BroadcastAsync"/>), in which case <see cref="FromId"/> is the device that handed
-        /// it to us and this is the device that started it. That is checked: the broadcast carries the origin's signature, which
-        /// was verified against a key this device trusts for that origin before the handler ran.
-        /// </summary>
+        //The device that started this command. Same as FromId unless it was relayed
+        //(BroadcastAsync), in which case FromId is the device that handed
+        //it to us and this is the device that started it. That is checked: the broadcast carries the origin's signature, which
+        //was verified against a key this device trusts for that origin before the handler ran.
         public string Origin => OriginId ?? FromId;
 
-        /// <summary>True if the command reached us through a relay (or a broadcast), not straight from a single sender.</summary>
+        //True if the command reached us through a relay (or a broadcast), not straight from a single sender.
         public bool IsBroadcast => ChangeId is not null;
 
         public string PayloadAsString() => Encoding.UTF8.GetString(Payload);
     }
 
-    /// <summary>
-    /// What <see cref="EclipseBroker.BroadcastAsync"/> did. <see cref="Acks"/> holds one ack per device we handed it to
-    /// DIRECTLY. Devices further along were reached by those devices relaying it; we do not hear from them.
-    /// </summary>
+    //What BroadcastAsync did. Acks holds one ack per device we handed it to
+    //DIRECTLY. Devices further along were reached by those devices relaying it; we do not hear from them.
     public sealed record BroadcastResult(string ChangeId, IReadOnlyDictionary<string, CommandAck> Acks)
     {
-        /// <summary>True if every directly connected device accepted it (also true when there was nobody to tell).</summary>
+        //True if every directly connected device accepted it (also true when there was nobody to tell).
         public bool AllAccepted => Acks.Values.All(a => a.IsOk);
     }
 
-    /// <summary>What a command handler returns.</summary>
+    //What a command handler returns.
     public sealed record CommandResult(AckStatus Status, byte[] Data, string? Message)
     {
         public static CommandResult Ok(byte[]? data = null) => new(AckStatus.Ok, data ?? Array.Empty<byte>(), null);
@@ -90,27 +91,23 @@ namespace YuukoProtocol
         public static CommandResult Denied(string message = "denied") => new(AckStatus.Denied, Array.Empty<byte>(), message);
     }
 
-    /// <summary>
-    /// A command implementation. It runs on a background thread, may take a while (up to
-    /// <see cref="EclipseBrokerOptions.CommandHandlerTimeout"/>), and may throw: a thrown exception
-    /// becomes an <see cref="AckStatus.Error"/> ack that names only the exception type.
-    /// </summary>
+    //A command implementation. It runs on a background thread, may take a while (up to
+    //CommandHandlerTimeout), and may throw: a thrown exception
+    //becomes an Error ack that names only the exception type.
     public delegate Task<CommandResult> CommandHandler(CommandContext context, CancellationToken ct);
 
-    /// <summary>Per-call overrides for <see cref="EclipseBroker.SendCommandAsync"/>. Null means "use the broker default".</summary>
+    //Per-call overrides for SendCommandAsync. Null means "use the broker default".
     public sealed class CommandOptions
     {
-        /// <summary>How long to wait for the ack on each attempt.</summary>
+        //How long to wait for the ack on each attempt.
         public TimeSpan? Timeout { get; set; }
 
-        /// <summary>
-        /// Extra attempts after a timeout. Retries reuse the same request id, so the other device
-        /// runs the command at most once and simply repeats its answer.
-        /// </summary>
+        //Extra attempts after a timeout. Retries reuse the same request id, so the other device
+        //runs the command at most once and simply repeats its answer.
         public int? Retries { get; set; }
     }
 
-    /// <summary>A connected peer, as seen by this device.</summary>
+    //A connected peer, as seen by this device.
     public sealed record PeerInfo(
         string Id,
         string Fingerprint,

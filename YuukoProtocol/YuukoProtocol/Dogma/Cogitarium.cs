@@ -35,6 +35,10 @@
 // what the device SAYS, nothing here measures them, so a liar can claim to be perfect (It can't change a piece though). The distrusts are not said by
 // the device, we count them ourselves. The time a device takes to answer is only used to break a tie.
 //
+// Liars and routes (Cogitarium.Ratings.cs): devices rate the main device that fed them (with a receipt the source can check), the source leaves out a group
+// that praises or slanders against everyone else, and rotates its main devices until as many devices as possible are green. A device can also choose to get
+// the stream from the mesh or straight from the source (Cogitarium.SetRoute).
+//
 // Tampering: a device that passes on a piece that was changed fails the signature at the next device. That device stops using it as a source of
 // data and stops passing anything to it (Distrusted), and tells the other devices in the chunk. When enough different neighbors (VotesToDistrust)
 // say the same about a device it is distrusted by everyone who heard it, even if they never saw it do anything themselves. A distrusted
@@ -47,6 +51,9 @@
 // it doesn't carry video or Gaussian splats (It carries bytes you give it, a piece is at most 512 KB), and it can't tell a liar from
 // a device that was lied to: a device that only DROPS pieces (instead of changing them) isn't noticed. Votes only count from devices
 // directly connected to you, but a person with many devices can still vote many times, so don't treat the number as proof.
+
+//Note I had these comments put atop the files because I am sure i'll forget how this all works in 2 months
+
 
 using System;
 using System.Collections.Concurrent;
@@ -61,7 +68,7 @@ using System.Threading.Tasks;
 
 namespace YuukoProtocol.Dogma
 {
-    public static class Cogitarium
+    public static partial class Cogitarium
     {
         //The five sizes a piece can be (1/1, 3/4, 1/2, 1/4 and 1/16 of full)
         public const int Full = 0;
@@ -149,6 +156,17 @@ namespace YuukoProtocol.Dogma
             public StreamInfo Info = new();
             internal Mesh? Owner;
             internal long Next;
+
+            //The devices the source sends to first, chosen by the ratings
+            public List<string> Mains => Owner?.MainsOf(this) ?? new();
+
+            //What the devices say about each main, the devices left out of that, and the share of devices that are green
+            public List<MainRating> Ratings() => Owner?.RatingsOf(this) ?? new();
+            public List<string> Suspects() => Owner?.SuspectsOf(this) ?? new();
+            public double Coverage => Owner?.CoverageOf(this) ?? 0;
+
+            //Look at the ratings now (It also happens by itself every RateEvery)
+            public void Rebalance() => Owner?.Review(this);
 
             //Signs a piece and sends it to the best few devices in the chunk, comes back with how many took it
             public Task<int> Send(byte[] Data, int Level = Full) =>
@@ -266,7 +284,7 @@ namespace YuukoProtocol.Dogma
         #endregion
 
 
-        internal sealed class Mesh : IDisposable
+        internal sealed partial class Mesh : IDisposable
         {
             const int DefaultScore = 250;                       //What we assume about a device we haven't spoken to yet
             const int SeenWindow = 1024;                        //How many pieces back a repeat is still noticed
@@ -279,6 +297,7 @@ namespace YuukoProtocol.Dogma
                 public Dictionary<string, int> Chunks = new();   //Chunk and the sizes it wants
                 public double Score = DefaultScore;              //Milliseconds it takes to answer us
                 public DeviceStatus? Status;                     //What it said about itself
+                public long HelloAt;                             //When its newest hello was made, so an older one that arrives late is ignored
             }
 
             class Offer
@@ -296,6 +315,15 @@ namespace YuukoProtocol.Dogma
                 public bool Mine;
                 public long Highest = -1;
                 public SortedSet<long> Seen = new();
+
+                //What we need to rate the main that fed us
+                public long WindowStart = -1;                    //Highest when this round began
+                public long WindowGot;                           //Pieces used this round
+                public Dictionary<string, int> Via = new();      //Main and how many pieces came through it this round
+                public string LastMain = "";
+                public long LastSeq = -1;
+                public string LastHash = "";                     //Of the newest piece, the receipt
+                public DateTime LastAt;
             }
 
             readonly EclipseBroker Node;
@@ -332,10 +360,14 @@ namespace YuukoProtocol.Dogma
                 Node.On("sccn.segment", (c, _) => Task.FromResult(HandleSegment(c)));
                 Node.On("sccn.warn", (c, _) => Task.FromResult(HandleWarn(c)));
                 Node.On("sccn.status", (c, _) => Task.FromResult(HandleStatus(c)));
+                Node.On("sccn.rate", (c, _) => Task.FromResult(HandleRate(c)));
+                Node.On("sccn.direct", (c, _) => Task.FromResult(HandleDirect(c)));
                 Node.PeerConnected += OnPeerConnected;
                 Node.PeerDisconnected += OnPeerDisconnected;
 
                 foreach (var Id in Node.ConnectedPeers) Peers.TryAdd(Id, new Peer());
+
+                _ = Task.Run(Tick);
             }
 
             public string MyFingerprint => Me.Fingerprint;
@@ -347,9 +379,10 @@ namespace YuukoProtocol.Dogma
             {
                 if (Interlocked.Exchange(ref _Disposed, 1) != 0) return;
 
+                Stopping.Cancel();
                 Node.PeerConnected -= OnPeerConnected;
                 Node.PeerDisconnected -= OnPeerDisconnected;
-                foreach (var Command in new[] { "sccn.hello", "sccn.announce", "sccn.segment", "sccn.warn", "sccn.status" }) Node.Off(Command);
+                foreach (var Command in new[] { "sccn.hello", "sccn.announce", "sccn.segment", "sccn.warn", "sccn.status", "sccn.rate", "sccn.direct" }) Node.Off(Command);
             }
 
             #region Create
@@ -407,6 +440,7 @@ namespace YuukoProtocol.Dogma
                 Known_[Info.ID] = new Known { Info = Info, Keys = Keys, Announce = Bytes, Mine = true };
 
                 var Made = new Stream { Info = Info, Owner = this };
+                Sources[Info.ID] = new Source { Info = Info, Stream = Made };
                 SendToChunk(ChunkID, "sccn.announce", Bytes, null);
                 return Made;
             }
@@ -498,7 +532,11 @@ namespace YuukoProtocol.Dogma
                 foreach (var Id in Known_.Where(k => k.Value.Info.Fingerprint == Fingerprint && !k.Value.Mine).Select(k => k.Key)) Known_.TryRemove(Id, out _);
             }
 
-            public void StopStream(Stream Stream) => Known_.TryRemove(Stream.Info.ID, out _);
+            public void StopStream(Stream Stream)
+            {
+                Known_.TryRemove(Stream.Info.ID, out _);
+                Sources.TryRemove(Stream.Info.ID, out _);
+            }
 
             #endregion
 
@@ -513,20 +551,25 @@ namespace YuukoProtocol.Dogma
                 var Sequence = Interlocked.Increment(ref Stream.Next) - 1;
                 var Sig = Me.Sign(SegmentBytes(Stream.Info.ID, Stream.Info.ChunkID, Sequence, Level, Data));
 
-                var Header = new JsonObject { ["id"] = Stream.Info.ID, ["seq"] = Sequence, ["lv"] = Level, ["h"] = 0, ["sig"] = Convert.ToBase64String(Sig) };
-                var Payload = Frame(Header, Data);
+                //Every copy says which main it was sent to (The device that rates it reads it), the signature doesn't change
+                byte[] Payload(string Main) =>
+                    Frame(new JsonObject { ["id"] = Stream.Info.ID, ["seq"] = Sequence, ["lv"] = Level, ["h"] = 0, ["m"] = Main, ["sig"] = Convert.ToBase64String(Sig) }, Data);
+
+                var Source = Sources[Stream.Info.ID];
+                Remember(Source, Sequence, Data);
 
                 //From the best to the worst, a device that doesn't take it is replaced by the next one down
-                var Order = Pick(Stream.Info.ChunkID, Level, int.MaxValue, null);
+                var Order = Choose(Source, Level);
                 int Took = 0, Next = 0;
 
                 while (Took < InitialReceivers && Next < Order.Count)
                 {
                     var Wave = Order.Skip(Next).Take(InitialReceivers - Took).ToList();
                     Next += Wave.Count;
-                    Took += (await Task.WhenAll(Wave.Select(r => SendPiece(r, Payload)))).Count(a => a);
+                    Took += (await Task.WhenAll(Wave.Select(r => SendPiece(r, Payload(r))))).Count(a => a);
                 }
 
+                await SendDirect(Source, Payload);
                 return Took;
             }
 
@@ -614,7 +657,7 @@ namespace YuukoProtocol.Dogma
                     Peers.GetOrAdd(Context.FromId, _ => new Peer()).Status = Said;
                     return CommandResult.Ok();
                 }
-                catch (Exception ex) when (ex is JsonException or FormatException or InvalidCastException or InvalidOperationException)
+                catch (Exception ex) when (BadInput.Is(ex))
                 {
                     return CommandResult.Error("malformed");
                 }
@@ -641,6 +684,7 @@ namespace YuukoProtocol.Dogma
             void OnPeerDisconnected(string Id, string Reason)
             {
                 Peers.TryRemove(Id, out _);
+                foreach (var S in Sources.Values) { lock (S) { S.Direct.Remove(Id); S.Raters.TryRemove(Id, out _); } }
                 foreach (var Old in Offered.Values.Where(o => o.From == Id || o.Info.Source == Id).ToList()) Offered.TryRemove(Old.Info.ID, out _);
             }
 
@@ -657,9 +701,10 @@ namespace YuukoProtocol.Dogma
                     try
                     {
                         var Chunks = new JsonObject();
-                        lock (Gate) foreach (var Chunk in MyChunks) Chunks[Chunk] = MyWants.GetValueOrDefault(Chunk, 31);
+                        long Stamp = DateTime.UtcNow.Ticks;
+                        lock (Gate) foreach (var Chunk in MyChunks) Chunks[Chunk] = Internet.Contains(Chunk) ? 0 : MyWants.GetValueOrDefault(Chunk, 31);     //0: pieces come straight from the source
 
-                        var Ack = await Node.SendCommandAsync(Device, "sccn.hello", Encoding.UTF8.GetBytes(new JsonObject { ["c"] = Chunks }.ToJsonString()), Quick);
+                        var Ack = await Node.SendCommandAsync(Device, "sccn.hello", Encoding.UTF8.GetBytes(new JsonObject { ["c"] = Chunks, ["t"] = Stamp }.ToJsonString()), Quick);
                         Learn(Device, Ack);
 
                         if (Ack.Status is not (AckStatus.TimedOut or AckStatus.Unreachable)) return;
@@ -689,7 +734,15 @@ namespace YuukoProtocol.Dogma
                     }
 
                     var Neighbor = Peers.GetOrAdd(Sender, _ => new Peer());
-                    Neighbor.Chunks = Chunks;
+
+                    //Two hellos can arrive in the wrong order, the one made first must not win
+                    long Made = (long?)JsonNode.Parse(Context.Payload)?["t"] ?? 0;
+                    lock (Neighbor)
+                    {
+                        if (Made != 0 && Made < Neighbor.HelloAt) return CommandResult.Ok("old");
+                        Neighbor.HelloAt = Math.Max(Neighbor.HelloAt, Made);
+                        Neighbor.Chunks = Chunks;
+                    }
 
                     foreach (var Stream in Known_.Values.Where(k => Chunks.ContainsKey(k.Info.ChunkID)))
                     {
@@ -699,7 +752,7 @@ namespace YuukoProtocol.Dogma
 
                     return CommandResult.Ok();
                 }
-                catch (Exception ex) when (ex is JsonException or FormatException or InvalidCastException or InvalidOperationException)
+                catch (Exception ex) when (BadInput.Is(ex))
                 {
                     return CommandResult.Error("malformed");
                 }
@@ -772,10 +825,12 @@ namespace YuukoProtocol.Dogma
                     StreamFound?.Invoke(Info);
                     RaiseFound(Info);
 
+                    if (InternetChunk(Info.ChunkID)) _ = Task.Run(() => PullOne(Info, true));
+
                     SendToChunk(Info.ChunkID, "sccn.announce", Payload, From);
                     return CommandResult.Ok();
                 }
-                catch (Exception ex) when (ex is JsonException or FormatException or InvalidCastException or ArgumentException or InvalidOperationException)
+                catch (Exception ex) when (BadInput.Is(ex))
                 {
                     return CommandResult.Error("malformed");
                 }
@@ -799,7 +854,7 @@ namespace YuukoProtocol.Dogma
                 if (!Unframe(Context.Payload, out var Header, out var Data)) return CommandResult.Error("malformed");
                 if (Data.Length == 0 || Data.Length > MaxSegmentBytes) return CommandResult.Error("wrong size");
 
-                string Id; long Sequence; int Level, Hops; byte[] Sig;
+                string Id, Main; long Sequence; int Level, Hops; byte[] Sig;
 
                 try
                 {
@@ -807,11 +862,12 @@ namespace YuukoProtocol.Dogma
                     Sequence = (long?)Header["seq"] ?? -1;
                     Level = (int?)Header["lv"] ?? -1;
                     Hops = (int?)Header["h"] ?? 0;
+                    Main = (string?)Header["m"] ?? "";
                     Sig = Convert.FromBase64String((string?)Header["sig"] ?? "");
                 }
-                catch (Exception ex) when (ex is InvalidCastException or FormatException) { return CommandResult.Error("malformed"); }
+                catch (Exception ex) when (BadInput.Is(ex)) { return CommandResult.Error("malformed"); }
 
-                if (Sequence < 0 || Level is < 0 or > 4 || Hops is < 0 or > MaxHops || Sig.Length is 0 or > 16384) return CommandResult.Error("malformed");
+                if (Sequence < 0 || Level is < 0 or > 4 || Hops is < 0 or > MaxHops || Sig.Length is 0 or > 16384 || Main.Length > 128) return CommandResult.Error("malformed");
 
                 //Pieces for a stream we don't know, or a chunk we left, aren't an offence, they're just not for us
                 if (!Known_.TryGetValue(Id, out var Stream) || Stream.Mine) return CommandResult.Ok("unknown stream");
@@ -837,13 +893,15 @@ namespace YuukoProtocol.Dogma
 
                     Stream.Highest = Math.Max(Stream.Highest, Sequence);
                     while (Stream.Seen.Count > SeenWindow) Stream.Seen.Remove(Stream.Seen.Min);
+                    Intake(Stream, Sequence, Data, Main);
                 }
 
                 var Piece = new Segment { Sequence = Sequence, Level = Level, Data = Data, From = Sender };
                 SegmentReceived?.Invoke(Stream.Info, Piece);
                 RaiseSegment(Stream.Info, Piece);
 
-                if (Hops < MaxHops)
+                //A device that gets the stream from the source itself doesn't pass it on
+                if (Hops < MaxHops && !InternetChunk(Stream.Info.ChunkID))
                 {
                     Header["h"] = Hops + 1;
                     PassOn(Stream, Level, Frame(Header, Data), Sender);
@@ -904,7 +962,7 @@ namespace YuukoProtocol.Dogma
                     if (Count >= VotesToDistrust) Distrust(Accused, $"{Count} neighbors say it tampered");
                     return CommandResult.Ok();
                 }
-                catch (Exception ex) when (ex is JsonException or InvalidCastException or InvalidOperationException)
+                catch (Exception ex) when (BadInput.Is(ex))
                 {
                     return CommandResult.Error("malformed");
                 }
@@ -960,7 +1018,7 @@ namespace YuukoProtocol.Dogma
                 if (Length <= 0 || Length > 16 * 1024 || 4 + Length > Bytes.Length) return false;
 
                 try { Header = JsonNode.Parse(Bytes.AsSpan(4, Length))?.AsObject() ?? throw new JsonException(); }
-                catch (Exception ex) when (ex is JsonException or InvalidOperationException) { return false; }
+                catch (Exception ex) when (BadInput.Is(ex)) { return false; }
 
                 Data = Bytes.AsSpan(4 + Length).ToArray();
                 return true;

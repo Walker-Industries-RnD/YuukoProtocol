@@ -302,7 +302,7 @@ namespace YuukoProtocol.Dogma
 
                 byte[] Given;
                 try { Given = Convert.FromBase64String((string?)JsonNode.Parse(Context.Payload)?["card"] ?? ""); }
-                catch (Exception ex) when (ex is JsonException or FormatException or InvalidCastException) { return CommandResult.Error("malformed"); }
+                catch (Exception ex) when (BadInput.Is(ex)) { return CommandResult.Error("malformed"); }
                 if (Given.Length > MaxCardBytes) return CommandResult.Error("too big");
 
                 //Who they are comes from the handshake, not from what they say

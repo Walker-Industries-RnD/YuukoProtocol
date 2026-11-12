@@ -1,0 +1,434 @@
+<!DOCTYPE html> <html lang="en"><head>
+<title>6 - Speed and Numbers</title>
+<base href="..">
+<meta name="pathname" content="1-getting-started/6-speed-and-numbers.html">
+<meta name="description" content="Yuuko Protocol - 6 - Speed and Numbers">
+<meta property="og:title" content="6 - Speed and Numbers">
+<meta property="og:description" content="Yuuko Protocol - 6 - Speed and Numbers">
+<meta property="og:type" content="website">
+<meta property="og:url" content="1-getting-started/6-speed-and-numbers.html">
+<meta property="og:image" content="undefined">
+<meta charset="UTF-8"><meta property="og:site_name" content="Yuuko Protocol"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=1.0, maximum-scale=5.0"><link rel="alternate" type="application/rss+xml" title="RSS Feed" href="site-lib/rss.xml"><script async="" id="webpage-script" src="site-lib/scripts/webpage.js" onload="this.onload=null;this.setAttribute(&quot;loaded&quot;, &quot;true&quot;)"></script><script async="" id="graph-wasm-script" src="site-lib/scripts/graph-wasm.js" onload="this.onload=null;this.setAttribute(&quot;loaded&quot;, &quot;true&quot;)"></script><script async="" id="graph-render-worker-script" src="site-lib/scripts/graph-render-worker.js" onload="this.onload=null;this.setAttribute(&quot;loaded&quot;, &quot;true&quot;)"></script><link rel="icon" href="site-lib/media/favicon.png"><link rel="stylesheet" href="site-lib/styles/obsidian.css"><link rel="stylesheet" href="site-lib/styles/theme.css"><link rel="preload" href="site-lib/styles/global-variable-styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="site-lib/styles/global-variable-styles.css"></noscript><link rel="preload" href="site-lib/styles/main-styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="site-lib/styles/main-styles.css"></noscript><style>body{--line-width:40em;--line-width-adaptive:40em;--file-line-width:40em;--sidebar-width:min(20em, 80vw);--collapse-arrow-size:11px;--tree-vertical-spacing:1.3em;--sidebar-margin:12px}:root{background-color:#202124}.sidebar{height:100%;font-size:14px;z-index:10;min-width:calc(var(--sidebar-width) + var(--divider-width-hover));max-width:calc(var(--sidebar-width) + var(--divider-width-hover));position:relative;overflow:hidden;overflow:clip;transition:min-width ease-in-out,max-width ease-in-out;transition-duration:.2s;contain:size}#left-sidebar{left:0}#right-sidebar{right:0}.sidebar.is-collapsed{min-width:0;max-width:0}.sidebar.floating{position:absolute}.sidebar .leaf-content{height:100%;min-width:calc(var(--sidebar-width) - var(--divider-width-hover));top:0;padding:var(--sidebar-margin);padding-top:4em;line-height:var(--line-height-tight);background-color:var(--background-secondary);transition:background-color,border-right,border-left,box-shadow;transition-duration:var(--color-fade-speed);transition-timing-function:ease-in-out;position:absolute;display:flex;flex-direction:column}.sidebar:not(.is-collapsed) .leaf-content{min-width:calc(max(100%,var(--sidebar-width)) - 3px);max-width:calc(max(100%,var(--sidebar-width)) - 3px)}#left-sidebar-content{left:0;border-top-right-radius:var(--radius-l);border-bottom-right-radius:var(--radius-l)}#right-sidebar-content{right:0;border-top-left-radius:var(--radius-l);border-bottom-left-radius:var(--radius-l)}.sidebar #left-sidebar-content,.sidebar #right-sidebar-content{contain:none!important;container-type:normal!important;animation:none!important}.sidebar:has(.leaf-content:empty):has(.topbar-content:empty){display:none}.sidebar-topbar{height:calc(2.3em + 2 * var(--sidebar-margin));width:var(--sidebar-width);padding:var(--sidebar-margin);z-index:1;position:fixed;display:flex;align-items:center;transition:width ease-in-out;transition-duration:inherit}.sidebar.is-collapsed .sidebar-topbar{width:calc(2.3em + var(--sidebar-margin) * 2)}.sidebar .sidebar-topbar.is-collapsed{width:0}#left-sidebar .sidebar-topbar{left:0;flex-direction:row;border-top-right-radius:var(--radius-l)}#right-sidebar .sidebar-topbar{right:0;flex-direction:row-reverse;border-top-left-radius:var(--radius-l)}#left-sidebar .topbar-content{margin-right:calc(2.3em + var(--sidebar-margin));flex-direction:row}#right-sidebar .topbar-content{margin-left:calc(2.3em + var(--sidebar-margin));flex-direction:row-reverse}.topbar-content{overflow:hidden visible;overflow:clip visible;width:100%;height:100%;display:flex;align-items:center;transition:inherit}.sidebar.is-collapsed .topbar-content{width:0;transition:inherit}.clickable-icon.sidebar-collapse-icon{background-color:transparent;color:var(--icon-color-focused);padding:2px!important;margin:0!important;height:100%!important;width:2.3em!important;margin-inline:0.14em!important;position:absolute}#left-sidebar .clickable-icon.sidebar-collapse-icon{transform:rotateY(180deg);right:var(--sidebar-margin)}#right-sidebar .clickable-icon.sidebar-collapse-icon{transform:rotateY(180deg);left:var(--sidebar-margin)}.clickable-icon.sidebar-collapse-icon svg.svg-icon{width:100%;height:100%}.feature-title{margin-left:1px;text-transform:uppercase;letter-spacing:.06em;margin-top:.75em;margin-bottom:.75em}.feature-header{display:flex;align-items:center;padding-top:0;font-size:1em;padding-left:0}body.floating-sidebars .sidebar{position:absolute}body{transition:background-color var(--color-fade-speed) ease-in-out}#navbar:not(:empty){display:flex;align-items:center;justify-content:space-between;padding:.5em 1em;width:100%}#main{display:flex;flex-direction:column;height:100%;width:100%;align-items:stretch;justify-content:center}#main-horizontal{display:flex;flex-direction:row;flex-grow:1;width:100%;align-items:stretch;justify-content:center}#center-content{flex-basis:100%;max-width:100%;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;transition:opacity .2s ease-in-out;contain:inline-size}.hide{opacity:0!important;transition:opacity .2s ease-in-out;pointer-events:none}#center-content>.obsidian-document{padding-left:2em;padding-right:1em;margin-bottom:0;width:100%;width:-webkit-fill-available;width:-moz-available;width:fill-available;transition:background-color var(--color-fade-speed) ease-in-out;border-top-right-radius:var(--window-radius,var(--radius-m));border-top-left-radius:var(--window-radius,var(--radius-m));overflow-x:hidden!important;overflow-y:auto!important;display:flex!important;flex-direction:column!important;align-items:center!important;contain:inline-size}body #center-content>.obsidian-document>.markdown-preview-sizer{padding-bottom:80vh;width:100%;max-width:var(--line-width);flex-basis:var(--line-width);transition:background-color var(--color-fade-speed) ease-in-out;contain:inline-size}#center-content>.obsidian-document>div{width:100%!important;transition:background-color var(--color-fade-speed) ease-in-out;contain:inline-size}#center-content>.obsidian-document:not([data-type=markdown]).embed{display:flex;padding:1em;height:100%;width:100%;align-items:center;justify-content:center}#center-content>.obsidian-document:not([data-type=markdown]).embed>*{max-width:100%;max-height:100%;object-fit:contain}:not(h1,h2,h3,h4,h5,h6,li):has(> :is(.math,table)){overflow-x:auto!important}#center-content>.obsidian-document:not([data-type=markdown]){overflow-x:auto;contain:content;padding:0;margin:0;height:100%}.obsidian-document[data-type=attachment]{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;width:100%}.obsidian-document[data-type=attachment]>*{outline:0;border:none;box-shadow:none}.obsidian-document[data-type=attachment] :is(img){max-width:90%;max-height:90%;object-fit:contain}.obsidian-document[data-type=attachment]>:is(audio){width:100%;max-width:min(90%,var(--line-width))}.obsidian-document[data-type=attachment]>:is(embed,iframe,video){width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain}.canvas-wrapper>:is(.header,.footer){z-index:100;position:absolute;display:flex;justify-content:center;flex-direction:column;width:100%;align-items:center}.scroll-highlight{position:absolute;width:100%;height:100%;pointer-events:none;z-index:1000;background-color:hsla(var(--color-accent-hsl),.25);opacity:0;padding:1em;inset:50%;translate:-50% -50%;border-radius:var(--radius-s)}</style><script defer="">async function loadIncludes(){let e=document.querySelectorAll("link[itemprop='include']");for(const t of e){let e=t.getAttribute("href");try{let o="";if(e.startsWith("https:")||e.startsWith("http:")||"file:"!=window.location.protocol){const n=await fetch(e);if(!n.ok){console.log("Could not include file: "+e),t?.remove();continue}o=await n.text()}else{const t=document.getElementById(btoa(encodeURI(e)));if(t){const e=JSON.parse(decodeURI(atob(t.getAttribute("value")??"")));o=e?.data??""}}let n=document.createRange().createContextualFragment(o);t.before(n),t.remove(),console.log("Included text: "+o),console.log("Included file: "+e)}catch(o){t?.remove(),console.log("Could not include file: "+e,o);continue}}}document.addEventListener("DOMContentLoaded",(()=>{loadIncludes()}));let isFileProtocol="file:"==location.protocol;function waitLoadScripts(e,t){let o=e.map((e=>document.getElementById(e+"-script")));!function e(n){let l=o[n],c=n+1;l?(l&&"true"!=l.getAttribute("loaded")||n<o.length&&e(c),n<o.length&&l.addEventListener("load",(()=>e(c)))):n<o.length?e(c):t()}(0)}</script></head><body class="publish css-settings-manager styled-scrollbars show-inline-title show-ribbon is-focused"><script defer="">let theme=localStorage.getItem("theme")||(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");"dark"==theme?(document.body.classList.add("theme-dark"),document.body.classList.remove("theme-light")):(document.body.classList.add("theme-light"),document.body.classList.remove("theme-dark")),window.innerWidth<480?document.body.classList.add("is-phone"):window.innerWidth<768?document.body.classList.add("is-tablet"):window.innerWidth<1024?document.body.classList.add("is-small-screen"):document.body.classList.add("is-large-screen")</script><div class="parsed-feature-container" style="display: contents;"><link itemprop="include" href="site-lib/html/custom-head-content-content.html"></div><div id="main"><div id="navbar"></div><div id="main-horizontal"><div id="left-content" class="leaf" style="--sidebar-width: var(--sidebar-width-left);"><div id="left-sidebar" class="sidebar"><div class="sidebar-handle"></div><div class="sidebar-topbar"><div class="topbar-content"><div id="search-container"><div id="search-wrapper"><input enterkeyhint="search" type="search" spellcheck="false" placeholder="Search..."><div aria-label="Clear search" id="search-clear-button"></div></div></div></div><div class="clickable-icon sidebar-collapse-icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="svg-icon"><path d="M21 3H3C1.89543 3 1 3.89543 1 5V19C1 20.1046 1.89543 21 3 21H21C22.1046 21 23 20.1046 23 19V5C23 3.89543 22.1046 3 21 3Z"></path><path d="M10 4V20"></path><path d="M4 7H7"></path><path d="M4 10H7"></path><path d="M4 13H7"></path></svg></div></div><div class="sidebar-content-wrapper"><div id="left-sidebar-content" class="leaf-content"><link itemprop="include" href="site-lib/html/file-tree-content.html"></div></div><script defer="">let ls = document.querySelector("#left-sidebar"); ls.classList.toggle("is-collapsed", window.innerWidth < 768); ls.style.setProperty("--sidebar-width", localStorage.getItem("sidebar-left-width"));</script></div></div><div id="center-content" class="leaf"><div class="obsidian-document markdown-preview-view markdown-rendered node-insert-event is-readable-line-width allow-fold-headings allow-fold-lists show-indentation-guide show-properties" data-type="markdown"><style id="MJX-CHTML-styles"></style><div class="markdown-preview-sizer markdown-preview-section"><div class="header"><h1 class="page-title heading inline-title" id="6_-_Speed_and_Numbers_0">6 - Speed and Numbers</h1><div class="data-bar"></div></div><div class="markdown-preview-pusher" style="width: 1px; height: 0.1px; margin-bottom: 0px;"></div><div class="el-p"><p dir="auto">How long things take and how fast they go, measured. Every number on this page comes from one run of a larger benchmark (Release build) on the machine below, so expect them to move a little from run to run: where it matters the page gives the middle of many runs and the slowest 1 in 20. That benchmark is kept outside the repo; <code>dotnet run -c Release --project YuukoSandbox -- bench</code> in the repo measures the first few rows yourself (the handshake, a question to a connected device, many at once, and raw AES-256-GCM).</p></div><div class="el-ul"><ul class="has-list-bullet">
+<li data-line="0" dir="auto"><span class="list-bullet"></span>Machine: AMD64 Family 23 Model 113 Stepping 0, AuthenticAMD, 8 logical cores, 15.9 GB memory</li>
+<li data-line="1" dir="auto"><span class="list-bullet"></span>Microsoft Windows 10.0.19045, .NET 8.0.31</li>
+<li data-line="2" dir="auto"><span class="list-bullet"></span>Date: 2026-11-12</li>
+</ul></div><div class="el-h2"><h2 data-heading="The short version" dir="auto" class="heading" id="The_short_version_0"><span class="heading-collapse-indicator collapse-indicator collapse-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon right-triangle"><path d="M3 8L12 17L21 8"></path></svg></span>The short version</h2></div><div class="el-table" dir="ltr" style="overflow-x: auto;"><table>
+<thead>
+<tr>
+<th dir="ltr">Doing this</th>
+<th dir="ltr">Takes about</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td dir="ltr">A new device connects (full post-quantum handshake)</td>
+<td dir="ltr"><strong>5 ms</strong>, once per device, then the session lasts an hour</td>
+</tr>
+<tr>
+<td dir="ltr">Ask a connected device something small</td>
+<td dir="ltr"><strong>40 µs</strong> (about 25,000 a second one by one, 35,000 a second at once)</td>
+</tr>
+<tr>
+<td dir="ltr">A command carrying 1 MB (the biggest allowed), echoed back</td>
+<td dir="ltr"><strong>21 ms</strong></td>
+</tr>
+<tr>
+<td dir="ltr">Type a letter on one device until the other has it</td>
+<td dir="ltr"><strong>2.6 ms</strong></td>
+</tr>
+<tr>
+<td dir="ltr">Share a 10 MB document</td>
+<td dir="ltr"><strong>0.3 s</strong></td>
+</tr>
+<tr>
+<td dir="ltr">A device that was away catches up on 305 documents (14 MB)</td>
+<td dir="ltr"><strong>0.8 s</strong></td>
+</tr>
+<tr>
+<td dir="ltr">Sync 1,000 small files / 4,100 small files</td>
+<td dir="ltr"><strong>4.5 s</strong> / <strong>29 s</strong></td>
+</tr>
+<tr>
+<td dir="ltr">Sync one 10 MB file / one 100 MB file</td>
+<td dir="ltr"><strong>0.14 s</strong> / <strong>1.1 s</strong> (about 80–100 MB/s)</td>
+</tr>
+<tr>
+<td dir="ltr">One 100 KB piece reaches all 30 devices in a Cogitarium</td>
+<td dir="ltr"><strong>78 ms</strong></td>
+</tr>
+<tr>
+<td dir="ltr">Write one audit log entry</td>
+<td dir="ltr"><strong>4 ms</strong> (the disk's flush, not the crypto)</td>
+</tr>
+<tr>
+<td dir="ltr">Two real Zenoh sessions: link, handshake and the first answer</td>
+<td dir="ltr"><strong>19 ms</strong></td>
+</tr>
+</tbody>
+</table></div><div class="el-h2"><h2 data-heading="The crypto (one core, one operation at a time)" dir="auto" class="heading" id="The_crypto_(one_core,_one_operation_at_a_time)_0"><span class="heading-collapse-indicator collapse-indicator collapse-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon right-triangle"><path d="M3 8L12 17L21 8"></path></svg></span>The crypto (one core, one operation at a time)</h2></div><div class="el-table" dir="ltr" style="overflow-x: auto;"><table>
+<thead>
+<tr>
+<th dir="ltr">What</th>
+<th dir="ltr">Result</th>
+<th dir="ltr">How it was measured</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td dir="ltr">Kyber-1024: make a key pair</td>
+<td dir="ltr">987 µs (slowest 1 in 20: 1.05 ms)</td>
+<td dir="ltr">30 runs</td>
+</tr>
+<tr>
+<td dir="ltr">Kyber-1024: encapsulate (make a shared secret)</td>
+<td dir="ltr">762 µs (slowest 1 in 20: 1.05 ms)</td>
+<td dir="ltr">100 runs</td>
+</tr>
+<tr>
+<td dir="ltr">Kyber-1024: decapsulate (open it)</td>
+<td dir="ltr">785 µs (slowest 1 in 20: 1.16 ms)</td>
+<td dir="ltr">100 runs</td>
+</tr>
+<tr>
+<td dir="ltr">A whole identity (Kyber + Dilithium5 key pairs)</td>
+<td dir="ltr">2.39 ms (slowest 1 in 20: 3.32 ms)</td>
+<td dir="ltr">15 runs; made once per device</td>
+</tr>
+<tr>
+<td dir="ltr">Dilithium5: sign 100 bytes</td>
+<td dir="ltr">5.55 ms (slowest 1 in 20: 9.33 ms)</td>
+<td dir="ltr">100 runs</td>
+</tr>
+<tr>
+<td dir="ltr">Dilithium5: verify 100 bytes</td>
+<td dir="ltr">473 µs (slowest 1 in 20: 797 µs)</td>
+<td dir="ltr">100 runs</td>
+</tr>
+<tr>
+<td dir="ltr">Dilithium5: sign 512 KB</td>
+<td dir="ltr">5.88 ms (slowest 1 in 20: 7.95 ms)</td>
+<td dir="ltr">30 runs</td>
+</tr>
+<tr>
+<td dir="ltr">Dilithium5: verify 512 KB</td>
+<td dir="ltr">5.58 ms (slowest 1 in 20: 6.7 ms)</td>
+<td dir="ltr">30 runs</td>
+</tr>
+<tr>
+<td dir="ltr">SHA-256</td>
+<td dir="ltr">1,631.8 MB/s</td>
+<td dir="ltr">64 MB in one go</td>
+</tr>
+<tr>
+<td dir="ltr">Argon2id (19 MB), turning a group key into the beacon key</td>
+<td dir="ltr">248.53 ms</td>
+<td dir="ltr">once, when Reconnect starts</td>
+</tr>
+<tr>
+<td dir="ltr">AES-256-GCM encrypt + decrypt, 256 B</td>
+<td dir="ltr">11 µs each, 22.7 MB/s</td>
+<td dir="ltr">50000 runs</td>
+</tr>
+<tr>
+<td dir="ltr">AES-256-GCM encrypt + decrypt, 64 KB</td>
+<td dir="ltr">173 µs each, 378.3 MB/s</td>
+<td dir="ltr">2000 runs</td>
+</tr>
+<tr>
+<td dir="ltr">AES-256-GCM encrypt + decrypt, 1024 KB</td>
+<td dir="ltr">2.07 ms each, 505.5 MB/s</td>
+<td dir="ltr">200 runs</td>
+</tr>
+</tbody>
+</table></div><div class="el-h2"><h2 data-heading="Connecting and asking (in-process)" dir="auto" class="heading" id="Connecting_and_asking_(in-process)_0"><span class="heading-collapse-indicator collapse-indicator collapse-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon right-triangle"><path d="M3 8L12 17L21 8"></path></svg></span>Connecting and asking (in-process)</h2></div><div class="el-table" dir="ltr" style="overflow-x: auto;"><table>
+<thead>
+<tr>
+<th dir="ltr">What</th>
+<th dir="ltr">Result</th>
+<th dir="ltr">How it was measured</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td dir="ltr">A new device connects (the whole post-quantum handshake) and gets its first answer</td>
+<td dir="ltr">5.04 ms</td>
+<td dir="ltr">100 different devices, one after the other</td>
+</tr>
+<tr>
+<td dir="ltr">Ask a connected device a question (256 B answer), one after the other</td>
+<td dir="ltr">42 µs each, 23,838 per second</td>
+<td dir="ltr">20000 runs</td>
+</tr>
+<tr>
+<td dir="ltr">The same, many at once over 8 lanes</td>
+<td dir="ltr">27,388 per second</td>
+<td dir="ltr">20000 questions</td>
+</tr>
+<tr>
+<td dir="ltr">The same, many at once over 32 lanes</td>
+<td dir="ltr">42,878 per second</td>
+<td dir="ltr">20000 questions</td>
+</tr>
+</tbody>
+</table></div><div class="el-h2"><h2 data-heading="Commands between two devices (in-process)" dir="auto" class="heading" id="Commands_between_two_devices_(in-process)_0"><span class="heading-collapse-indicator collapse-indicator collapse-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon right-triangle"><path d="M3 8L12 17L21 8"></path></svg></span>Commands between two devices (in-process)</h2></div><div class="el-table" dir="ltr" style="overflow-x: auto;"><table>
+<thead>
+<tr>
+<th dir="ltr">What</th>
+<th dir="ltr">Result</th>
+<th dir="ltr">How it was measured</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td dir="ltr">Send a command with nothing and get it echoed back</td>
+<td dir="ltr">37 µs (slowest 1 in 20: 74 µs)</td>
+<td dir="ltr">500 runs</td>
+</tr>
+<tr>
+<td dir="ltr">Send a command with 1 KB and get it echoed back</td>
+<td dir="ltr">52 µs (slowest 1 in 20: 95 µs), 39.2 MB/s counting both ways</td>
+<td dir="ltr">500 runs</td>
+</tr>
+<tr>
+<td dir="ltr">Send a command with 64 KB and get it echoed back</td>
+<td dir="ltr">749 µs (slowest 1 in 20: 2.74 ms), 175.0 MB/s counting both ways</td>
+<td dir="ltr">100 runs</td>
+</tr>
+<tr>
+<td dir="ltr">Send a command with 512 KB and get it echoed back</td>
+<td dir="ltr">7.31 ms (slowest 1 in 20: 11.42 ms), 143.4 MB/s counting both ways</td>
+<td dir="ltr">30 runs</td>
+</tr>
+<tr>
+<td dir="ltr">Send a command with 1 MB (the biggest) and get it echoed back</td>
+<td dir="ltr">13.99 ms (slowest 1 in 20: 18.59 ms), 142.9 MB/s counting both ways</td>
+<td dir="ltr">20 runs</td>
+</tr>
+<tr>
+<td dir="ltr">Ping</td>
+<td dir="ltr">121 µs (slowest 1 in 20: 200 µs)</td>
+<td dir="ltr">300 runs</td>
+</tr>
+<tr>
+<td dir="ltr">Broadcast to a device you are connected to</td>
+<td dir="ltr">16.2 ms</td>
+<td dir="ltr">one signed broadcast</td>
+</tr>
+</tbody>
+</table></div><div class="el-h2"><h2 data-heading="Shared documents (in-process)" dir="auto" class="heading" id="Shared_documents_(in-process)_0"><span class="heading-collapse-indicator collapse-indicator collapse-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon right-triangle"><path d="M3 8L12 17L21 8"></path></svg></span>Shared documents (in-process)</h2></div><div class="el-table" dir="ltr" style="overflow-x: auto;"><table>
+<thead>
+<tr>
+<th dir="ltr">What</th>
+<th dir="ltr">Result</th>
+<th dir="ltr">How it was measured</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td dir="ltr">Type a letter on one device until the other has it</td>
+<td dir="ltr">2.61 ms (slowest 1 in 20: 7.75 ms)</td>
+<td dir="ltr">100 edits, one device to the other</td>
+</tr>
+<tr>
+<td dir="ltr">Share a document of 100 KB</td>
+<td dir="ltr">10.67 ms, 9.4 MB/s</td>
+<td dir="ltr">until the other device has all of it</td>
+</tr>
+<tr>
+<td dir="ltr">Share a document of 1 MB</td>
+<td dir="ltr">87.93 ms, 11.4 MB/s</td>
+<td dir="ltr">until the other device has all of it</td>
+</tr>
+<tr>
+<td dir="ltr">Share a document of 3 MB (sent in pieces)</td>
+<td dir="ltr">156.81 ms, 19.1 MB/s</td>
+<td dir="ltr">until the other device has all of it</td>
+</tr>
+<tr>
+<td dir="ltr">Share a document of 10 MB (sent in pieces)</td>
+<td dir="ltr">304.43 ms, 32.8 MB/s</td>
+<td dir="ltr">until the other device has all of it</td>
+</tr>
+<tr>
+<td dir="ltr">Share 300 small documents, one after the other</td>
+<td dir="ltr">753.2 ms, 398 documents per second</td>
+<td dir="ltr">until the other device has them all</td>
+</tr>
+<tr>
+<td dir="ltr">A device that was away catches up on 305 documents (about 14.1 MB)</td>
+<td dir="ltr">798.69 ms</td>
+<td dir="ltr">compare notes, in pages, with a device that has them all</td>
+</tr>
+</tbody>
+</table></div><div class="el-h2"><h2 data-heading="Folder sync (in-process, files on this disk)" dir="auto" class="heading" id="Folder_sync_(in-process,_files_on_this_disk)_0"><span class="heading-collapse-indicator collapse-indicator collapse-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon right-triangle"><path d="M3 8L12 17L21 8"></path></svg></span>Folder sync (in-process, files on this disk)</h2></div><div class="el-table" dir="ltr" style="overflow-x: auto;"><table>
+<thead>
+<tr>
+<th dir="ltr">What</th>
+<th dir="ltr">Result</th>
+<th dir="ltr">How it was measured</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td dir="ltr">Work out the hash of a file</td>
+<td dir="ltr">1,402.9 MB/s</td>
+<td dir="ltr">64 MB, 256 KB pieces, from the disk cache</td>
+</tr>
+<tr>
+<td dir="ltr">Sync a new folder of 1,000 small files</td>
+<td dir="ltr">4.45 s, 225 files per second</td>
+<td dir="ltr">the other device had nothing</td>
+</tr>
+<tr>
+<td dir="ltr">Sync a new folder of 4,100 files (past the old limit)</td>
+<td dir="ltr">29.34 s, 140 files per second</td>
+<td dir="ltr">the other device had nothing</td>
+</tr>
+<tr>
+<td dir="ltr">Look at a folder of 4,100 files (list + hash them)</td>
+<td dir="ltr">3.4 s</td>
+<td dir="ltr">nothing hashed before</td>
+</tr>
+<tr>
+<td dir="ltr">Sync one 10 MB file to a device that has nothing</td>
+<td dir="ltr">136.23 ms, 77.0 MB/s</td>
+<td dir="ltr">middle of 3 runs (119.48 ms to 140.22 ms); 256 KB pieces, each asked for and answered, hash checked at the end</td>
+</tr>
+<tr>
+<td dir="ltr">Sync one 100 MB file to a device that has nothing</td>
+<td dir="ltr">1.07 s, 97.6 MB/s</td>
+<td dir="ltr">middle of 3 runs (1.05 s to 1.09 s); same way</td>
+</tr>
+</tbody>
+</table></div><div class="el-h2"><h2 data-heading="The Cogitarium (in-process: 1 source, 10 devices it sends to, 20 more behind them)" dir="auto" class="heading" id="The_Cogitarium_(in-process_1_source,_10_devices_it_sends_to,_20_more_behind_them)_0"><span class="heading-collapse-indicator collapse-indicator collapse-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon right-triangle"><path d="M3 8L12 17L21 8"></path></svg></span>The Cogitarium (in-process: 1 source, 10 devices it sends to, 20 more behind them)</h2></div><div class="el-table" dir="ltr" style="overflow-x: auto;"><table>
+<thead>
+<tr>
+<th dir="ltr">What</th>
+<th dir="ltr">Result</th>
+<th dir="ltr">How it was measured</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td dir="ltr">Set up: 31 devices find each other and learn the stream</td>
+<td dir="ltr">180.74 ms</td>
+<td dir="ltr">including 31 identities and the handshakes</td>
+</tr>
+<tr>
+<td dir="ltr">One piece of 10 KB: until all 30 devices have it</td>
+<td dir="ltr">16 ms (slowest 1 in 20: 30.94 ms)</td>
+<td dir="ltr">20 pieces; the source itself was done sending after 12.15 ms</td>
+</tr>
+<tr>
+<td dir="ltr">One piece of 100 KB: until all 30 devices have it</td>
+<td dir="ltr">77.88 ms (slowest 1 in 20: 162.09 ms)</td>
+<td dir="ltr">20 pieces; the source itself was done sending after 61.05 ms</td>
+</tr>
+<tr>
+<td dir="ltr">One piece of 512 KB (the biggest): until all 30 devices have it</td>
+<td dir="ltr">409.8 ms (slowest 1 in 20: 526.96 ms)</td>
+<td dir="ltr">10 pieces; the source itself was done sending after 409.78 ms</td>
+</tr>
+<tr>
+<td dir="ltr">A steady stream of 100 KB pieces to 30 devices</td>
+<td dir="ltr">19.9 pieces per second, 2.0 MB/s to every device</td>
+<td dir="ltr">100 pieces back to back; the source sends each to 10 devices</td>
+</tr>
+<tr>
+<td dir="ltr">Pieces that did not arrive</td>
+<td dir="ltr">none</td>
+<td dir="ltr">in the run above</td>
+</tr>
+</tbody>
+</table></div><div class="el-h2"><h2 data-heading="The audit log" dir="auto" class="heading" id="The_audit_log_0"><span class="heading-collapse-indicator collapse-indicator collapse-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon right-triangle"><path d="M3 8L12 17L21 8"></path></svg></span>The audit log</h2></div><div class="el-table" dir="ltr" style="overflow-x: auto;"><table>
+<thead>
+<tr>
+<th dir="ltr">What</th>
+<th dir="ltr">Result</th>
+<th dir="ltr">How it was measured</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td dir="ltr">Write an entry (no key)</td>
+<td dir="ltr">4.04 ms each, 248 per second</td>
+<td dir="ltr">2000 entries, each flushed to the disk</td>
+</tr>
+<tr>
+<td dir="ltr">Check the whole log (no key)</td>
+<td dir="ltr">18.1 ms for 2,000 entries, 110,522 per second</td>
+<td dir="ltr">and it was fine</td>
+</tr>
+<tr>
+<td dir="ltr">Write an entry (with a key)</td>
+<td dir="ltr">4.21 ms each, 238 per second</td>
+<td dir="ltr">2000 entries, each flushed to the disk</td>
+</tr>
+<tr>
+<td dir="ltr">Check the whole log (with a key)</td>
+<td dir="ltr">20.39 ms for 2,000 entries, 98,068 per second</td>
+<td dir="ltr">and it was fine</td>
+</tr>
+<tr>
+<td dir="ltr">Write an entry (with a key, signed by the device)</td>
+<td dir="ltr">5.58 ms each, 179 per second</td>
+<td dir="ltr">400 entries, each flushed to the disk</td>
+</tr>
+<tr>
+<td dir="ltr">Check the whole log (with a key, signed by the device)</td>
+<td dir="ltr">228.42 ms for 401 entries, 1,756 per second</td>
+<td dir="ltr">and it was fine</td>
+</tr>
+</tbody>
+</table></div><div class="el-h2"><h2 data-heading="Over real Zenoh (two sessions on this machine, over the loopback, no TLS)" dir="auto" class="heading" id="Over_real_Zenoh_(two_sessions_on_this_machine,_over_the_loopback,_no_TLS)_0"><span class="heading-collapse-indicator collapse-indicator collapse-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon right-triangle"><path d="M3 8L12 17L21 8"></path></svg></span>Over real Zenoh (two sessions on this machine, over the loopback, no TLS)</h2></div><div class="el-table" dir="ltr" style="overflow-x: auto;"><table>
+<thead>
+<tr>
+<th dir="ltr">What</th>
+<th dir="ltr">Result</th>
+<th dir="ltr">How it was measured</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td dir="ltr">Open both sessions</td>
+<td dir="ltr">687.08 ms</td>
+<td dir="ltr">native library loaded, listener up, link made</td>
+</tr>
+<tr>
+<td dir="ltr">From the first try until the handshake is done and a ping is answered</td>
+<td dir="ltr">18.72 ms</td>
+<td dir="ltr">includes waiting for the link</td>
+</tr>
+<tr>
+<td dir="ltr">Ping</td>
+<td dir="ltr">248 µs (slowest 1 in 20: 483 µs)</td>
+<td dir="ltr">300 runs</td>
+</tr>
+<tr>
+<td dir="ltr">Send a command with 1 KB and get it echoed back</td>
+<td dir="ltr">273 µs (slowest 1 in 20: 378 µs), 7.5 MB/s counting both ways</td>
+<td dir="ltr">200 runs</td>
+</tr>
+<tr>
+<td dir="ltr">Send a command with 64 KB and get it echoed back</td>
+<td dir="ltr">2.05 ms (slowest 1 in 20: 3.55 ms), 63.9 MB/s counting both ways</td>
+<td dir="ltr">60 runs</td>
+</tr>
+<tr>
+<td dir="ltr">Send a command with 512 KB and get it echoed back</td>
+<td dir="ltr">26.71 ms (slowest 1 in 20: 120.95 ms), 39.3 MB/s counting both ways</td>
+<td dir="ltr">20 runs</td>
+</tr>
+<tr>
+<td dir="ltr">Send a command with 1 MB (the biggest) and get it echoed back</td>
+<td dir="ltr">46.96 ms (slowest 1 in 20: 63.97 ms), 42.6 MB/s counting both ways</td>
+<td dir="ltr">15 runs</td>
+</tr>
+</tbody>
+</table></div><div class="el-h2"><h2 data-heading="What the numbers say (TLDR)" dir="auto" class="heading" id="What_the_numbers_say_(TLDR)_0"><span class="heading-collapse-indicator collapse-indicator collapse-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon right-triangle"><path d="M3 8L12 17L21 8"></path></svg></span>What the numbers say (TLDR)</h2></div><div class="el-p"><p dir="auto"><strong>The crypto is cheap, except signing.</strong> A Kyber-1024 key operation is about a millisecond and verifying a Dilithium5 signature is about half a millisecond. <em>Signing</em> is slower and uneven: the middle is 2.5 ms for a small message but 1 in 20 takes 14 ms. That is why a handshake is 5 ms, and why signing every audit entry costs more than keying it. Making a whole identity (both key pairs) is about 5 ms and happens once.</p></div><div class="el-p"><p dir="auto"><strong>Connecting is a one-time cost.</strong> The 5 ms handshake is Kyber, Dilithium5 and a throw-away key for forward secrecy. After it, asking a connected device something takes 40 µs because the encryption on an open session is fast: AES-256-GCM does about 300 MB/s on large messages (small messages are slower per byte, because each one has a fixed cost).</p></div><div class="el-p"><p dir="auto"><strong>Big commands are limited by encrypting and copying them, not by the protocol.</strong> A 1 MB command takes 21 ms in-process (96 MB/s counting both directions). Over real Zenoh it is 47 ms: the extra is the socket.</p></div><div class="el-p"><p dir="auto"><strong>Shared documents are quick for edits and fine for big ones.</strong> An edit reaches the other device in under 3 ms in the middle. A 10 MB document takes 0.3 s in pieces of 500 KB (33 MB/s). Three hundred small documents go out at about 400 a second, and a device that was away compares notes in pages of about 200 KB and gets 14 MB of documents in under a second.</p></div><div class="el-p"><p dir="auto"><strong>Folders cost most per file, not per byte.</strong> A thousand small files is 225 files a second, and 4,100 is 140 a second: each file is its own request, its own hash and its own write. One big file is faster per byte (a 10 MB file takes 0.14 s and a 100 MB file 1.1 s, about 80–100 MB/s) but each 256 KB piece is asked for and answered one after the other, so it is limited by the round trip, not the disk. That means over a real network you add about one round trip per piece: 40 pieces for 10 MB and 400 for 100 MB (an estimate from the arithmetic, not a measurement: with a 20 ms round trip that is roughly +0.8 s and +8 s). Hashing a file alone runs at 1,400 MB/s from the cache, and looking at a folder of 4,100 files for the first time takes 3.4 s.</p></div><div class="el-p"><p dir="auto"><strong>The Cogitarium sends each piece to 10 devices and they pass it on.</strong> A 10 KB piece reaches all 30 devices in 16 ms; a 100 KB piece in 78 ms; a 512 KB piece in 410 ms. A steady stream of 100 KB pieces goes at about 20 a second (2 MB/s to every device) with none missed, because the source sends each piece to its 10 first devices before the next one.</p></div><div class="el-p"><p dir="auto"><strong>The audit log is as fast as the disk.</strong> Each entry is flushed to disk before <code>Append</code> returns, which is the 4 ms. Checking a keyed log runs at about 100,000 entries a second; checking a <em>signed</em> log is 1,750 a second because every signature is verified.</p></div><div class="el-p"><p dir="auto">See also <a data-href="3 - Setting Up A Project" href="1-getting-started/3-setting-up-a-project.html" class="internal-link" target="_self" rel="noopener nofollow">3 - Setting Up A Project</a> and <a data-href="1 - Security Overview" href="4-security/1-security-overview.html" class="internal-link" target="_self" rel="noopener nofollow">1 - Security Overview</a>.</p></div><div class="footer"><div class="data-bar"></div></div></div></div></div><div id="right-content" class="leaf" style="--sidebar-width: var(--sidebar-width-right);"><div id="right-sidebar" class="sidebar"><div class="sidebar-handle"></div><div class="sidebar-topbar"><div class="topbar-content"><label class="theme-toggle-container" for="theme-toggle-input" id=""><input class="theme-toggle-input" type="checkbox" id="theme-toggle-input"><div class="toggle-background"></div></label></div><div class="clickable-icon sidebar-collapse-icon"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="svg-icon"><path d="M21 3H3C1.89543 3 1 3.89543 1 5V19C1 20.1046 1.89543 21 3 21H21C22.1046 21 23 20.1046 23 19V5C23 3.89543 22.1046 3 21 3Z"></path><path d="M10 4V20"></path><path d="M4 7H7"></path><path d="M4 10H7"></path><path d="M4 13H7"></path></svg></div></div><div class="sidebar-content-wrapper"><div id="right-sidebar-content" class="leaf-content"><div class="graph-view-wrapper"><div class="feature-header"><div class="feature-title">Interactive Graph</div></div><div class="graph-view-placeholder">
+		<div class="graph-view-container">
+			<div class="graph-icon graph-expand" role="button" aria-label="Expand" data-tooltip-position="top"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg></div>
+			<div class="graph-icon graph-global" role="button" aria-label="Global Graph" data-tooltip-position="top"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon lucide-git-fork"><circle cx="12" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><circle cx="18" cy="6" r="3"></circle><path d="M18 9v2c0 .6-.4 1-1 1H7c-.6 0-1-.4-1-1V9"></path><path d="M12 12v3"></path></svg></div>
+			<canvas id="graph-canvas" class="hide" width="512px" height="512px"></canvas>
+		</div>
+		</div></div><div id="outline" class=" tree-container"><div class="feature-header"><div class="feature-title">Table Of Contents</div><button class="clickable-icon nav-action-button tree-collapse-all" aria-label="Collapse All"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg></button></div><div class="tree-item mod-collapsible" data-depth="1"><a class="tree-item-self is-clickable mod-collapsible" href="1-getting-started/6-speed-and-numbers.html#6_-_Speed_and_Numbers_0" data-path="#6_-_Speed_and_Numbers_0"><div class="tree-item-icon collapse-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon right-triangle"><path d="M3 8L12 17L21 8"></path></svg></div><div class="tree-item-inner heading-link" heading-name="6 - Speed and Numbers">6 - Speed and Numbers</div></a><div class="tree-item-children"><div class="tree-item" data-depth="2"><a class="tree-item-self is-clickable" href="1-getting-started/6-speed-and-numbers.html#The_short_version_0" data-path="#The_short_version_0"><div class="tree-item-inner heading-link" heading-name="The short version">The short version</div></a><div class="tree-item-children"></div></div><div class="tree-item" data-depth="2"><a class="tree-item-self is-clickable" href="1-getting-started/6-speed-and-numbers.html#The_crypto_(one_core,_one_operation_at_a_time)_0" data-path="#The_crypto_(one_core,_one_operation_at_a_time)_0"><div class="tree-item-inner heading-link" heading-name="The crypto (one core, one operation at a time)">The crypto (one core, one operation at a time)</div></a><div class="tree-item-children"></div></div><div class="tree-item" data-depth="2"><a class="tree-item-self is-clickable" href="1-getting-started/6-speed-and-numbers.html#Connecting_and_asking_(in-process)_0" data-path="#Connecting_and_asking_(in-process)_0"><div class="tree-item-inner heading-link" heading-name="Connecting and asking (in-process)">Connecting and asking (in-process)</div></a><div class="tree-item-children"></div></div><div class="tree-item" data-depth="2"><a class="tree-item-self is-clickable" href="1-getting-started/6-speed-and-numbers.html#Commands_between_two_devices_(in-process)_0" data-path="#Commands_between_two_devices_(in-process)_0"><div class="tree-item-inner heading-link" heading-name="Commands between two devices (in-process)">Commands between two devices (in-process)</div></a><div class="tree-item-children"></div></div><div class="tree-item" data-depth="2"><a class="tree-item-self is-clickable" href="1-getting-started/6-speed-and-numbers.html#Shared_documents_(in-process)_0" data-path="#Shared_documents_(in-process)_0"><div class="tree-item-inner heading-link" heading-name="Shared documents (in-process)">Shared documents (in-process)</div></a><div class="tree-item-children"></div></div><div class="tree-item" data-depth="2"><a class="tree-item-self is-clickable" href="1-getting-started/6-speed-and-numbers.html#Folder_sync_(in-process,_files_on_this_disk)_0" data-path="#Folder_sync_(in-process,_files_on_this_disk)_0"><div class="tree-item-inner heading-link" heading-name="Folder sync (in-process, files on this disk)">Folder sync (in-process, files on this disk)</div></a><div class="tree-item-children"></div></div><div class="tree-item" data-depth="2"><a class="tree-item-self is-clickable" href="1-getting-started/6-speed-and-numbers.html#The_Cogitarium_(in-process_1_source,_10_devices_it_sends_to,_20_more_behind_them)_0" data-path="#The_Cogitarium_(in-process_1_source,_10_devices_it_sends_to,_20_more_behind_them)_0"><div class="tree-item-inner heading-link" heading-name="The Cogitarium (in-process: 1 source, 10 devices it sends to, 20 more behind them)">The Cogitarium (in-process: 1 source, 10 devices it sends to, 20 more behind them)</div></a><div class="tree-item-children"></div></div><div class="tree-item" data-depth="2"><a class="tree-item-self is-clickable" href="1-getting-started/6-speed-and-numbers.html#The_audit_log_0" data-path="#The_audit_log_0"><div class="tree-item-inner heading-link" heading-name="The audit log">The audit log</div></a><div class="tree-item-children"></div></div><div class="tree-item" data-depth="2"><a class="tree-item-self is-clickable" href="1-getting-started/6-speed-and-numbers.html#Over_real_Zenoh_(two_sessions_on_this_machine,_over_the_loopback,_no_TLS)_0" data-path="#Over_real_Zenoh_(two_sessions_on_this_machine,_over_the_loopback,_no_TLS)_0"><div class="tree-item-inner heading-link" heading-name="Over real Zenoh (two sessions on this machine, over the loopback, no TLS)">Over real Zenoh (two sessions on this machine, over the loopback, no TLS)</div></a><div class="tree-item-children"></div></div><div class="tree-item" data-depth="2"><a class="tree-item-self is-clickable" href="1-getting-started/6-speed-and-numbers.html#What_the_numbers_say_(TLDR)_0" data-path="#What_the_numbers_say_(TLDR)_0"><div class="tree-item-inner heading-link" heading-name="What the numbers say (TLDR)">What the numbers say (TLDR)</div></a><div class="tree-item-children"></div></div></div></div></div></div></div><script defer="">let rs = document.querySelector("#right-sidebar"); rs.classList.toggle("is-collapsed", window.innerWidth < 768); rs.style.setProperty("--sidebar-width", localStorage.getItem("sidebar-right-width"));</script></div></div></div></div></body></html>

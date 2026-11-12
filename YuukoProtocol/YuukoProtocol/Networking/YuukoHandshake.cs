@@ -40,16 +40,14 @@ using WISecureData;
 
 namespace YuukoProtocol
 {
-    // ── Identity ───────────────────────────────────────────────────────────────
+    //Identity
 
-    /// <summary>The public halves of a device identity: what other devices pin and verify against.</summary>
+    //The public halves of a device identity: what other devices pin and verify against.
     public sealed record PublicKeys(Dictionary<string, byte[]> Kyber, Dictionary<string, byte[]> Signing);
 
-    /// <summary>
-    /// A peer's stable identity: a human-readable id plus two keypairs. A Kyber-1024 keypair
-    /// (others encapsulate to it; holding the private half is what proves a REQUESTER is who it
-    /// says) and a Dilithium5 signing keypair (what proves a PROVIDER is who it says).
-    /// </summary>
+    //A peer's stable identity: a human-readable id plus two keypairs. A Kyber-1024 keypair
+    //(others encapsulate to it; holding the private half is what proves a REQUESTER is who it
+    //says) and a Dilithium5 signing keypair (what proves a PROVIDER is who it says).
     public sealed class YuukoIdentity
     {
         public string ClientId { get; }
@@ -58,10 +56,8 @@ namespace YuukoProtocol
         internal IReadOnlyDictionary<string, byte[]> SigningPublic { get; }
         internal IReadOnlyDictionary<string, byte[]> SigningPrivate { get; }
 
-        /// <summary>
-        /// SHA-256 over both public keys (lowercase hex, 64 chars). Pin THIS when you trust a
-        /// device - not the ClientId, which anyone can claim.
-        /// </summary>
+        //SHA-256 over both public keys (lowercase hex, 64 chars). Pin THIS when you trust a
+        //device - not the ClientId, which anyone can claim.
         public string Fingerprint { get; }
 
         private YuukoIdentity(string clientId,
@@ -78,7 +74,7 @@ namespace YuukoProtocol
 
         private const int MaxKeyPartBytes = 8192;
 
-        /// <summary>Fingerprint of a device's public keys, as other devices compute it.</summary>
+        //Fingerprint of a device's public keys, as other devices compute it.
         public static string FingerprintOf(PublicKeys keys)
         {
             if (keys is null) throw new ArgumentNullException(nameof(keys));
@@ -106,7 +102,7 @@ namespace YuukoProtocol
                     : throw new ArgumentException($"Not a valid public key (missing or oversized '{key}').");
         }
 
-        /// <summary>A hash of one Kyber public key, used to bind a handshake's throw-away key into the signed transcript.</summary>
+        //A hash of one Kyber public key, used to bind a handshake's throw-away key into the signed transcript.
         internal static byte[] KyberPublicDigest(IReadOnlyDictionary<string, byte[]> kyberPublic)
         {
             byte[] t = Part(kyberPublic, "t"), rho = Part(kyberPublic, "rho");
@@ -132,7 +128,7 @@ namespace YuukoProtocol
         private static readonly object KeyGate = new();
         internal static T OneAtATime<T>(Func<T> Make) { lock (KeyGate) return Make(); }
 
-        /// <summary>Generates a fresh identity (Kyber-1024 + Dilithium5 keypairs) for <paramref name="clientId"/>.</summary>
+        //Generates a fresh identity (Kyber-1024 + Dilithium5 keypairs) for clientId.
         public static YuukoIdentity Create(string clientId)
         {
             if (string.IsNullOrWhiteSpace(clientId))
@@ -143,16 +139,12 @@ namespace YuukoProtocol
             return new YuukoIdentity(clientId, kPub, kPriv, sPub, sPriv);
         }
 
-        /// <summary>The Kyber public key as a plain dictionary, safe to hand to other peers.</summary>
-        public Dictionary<string, byte[]> ExportPublicKey() =>
-            new(KyberPublic as IDictionary<string, byte[]> ?? new Dictionary<string, byte[]>(KyberPublic));
-
-        /// <summary>Both public keys, safe to hand to other peers.</summary>
+        //Both public keys, safe to hand to other peers.
         public PublicKeys ExportPublicKeys() => new(
             new Dictionary<string, byte[]>(KyberPublic),
             new Dictionary<string, byte[]>(SigningPublic));
 
-        // ── Signing (provider authentication) ──────────────────────────────────
+        //Signing (provider authentication)
 
         // Pariah signs a string, so both sides sign/verify the base64 text of the message bytes.
         internal byte[] Sign(byte[] message) =>
@@ -173,7 +165,7 @@ namespace YuukoProtocol
             catch { return false; }
         }
 
-        // ── Persistence ────────────────────────────────────────────────────────
+        //Persistence
         // A new identity on every launch means every pinned fingerprint breaks on restart,
         // so identities must be saved. The file holds the PRIVATE keys: anyone who can read it
         // can impersonate this device. Keep it somewhere only this user can read (the file is
@@ -189,7 +181,7 @@ namespace YuukoProtocol
             public Dictionary<string, byte[]> SigningPrivate { get; set; } = new();
         }
 
-        /// <summary>SECRET: serializes the identity including its private keys.</summary>
+        //SECRET: serializes the identity including its private keys.
         public byte[] Export() => JsonSerializer.SerializeToUtf8Bytes(new IdentityFile
         {
             ClientId = ClientId,
@@ -202,16 +194,14 @@ namespace YuukoProtocol
         private const string EncryptedPrefix = "yuuko-id-enc-v1:";
         private const int MinPasswordLength = 8;
 
-        /// <summary>True if <paramref name="data"/> is a password-protected identity file.</summary>
+        //True if data is a password-protected identity file.
         public static bool IsEncryptedIdentity(byte[] data) =>
             data.Length > EncryptedPrefix.Length &&
             string.Equals(Encoding.ASCII.GetString(data, 0, EncryptedPrefix.Length), EncryptedPrefix, StringComparison.Ordinal);
 
-        /// <summary>
-        /// Like <see cref="Export"/> but protected with a password: Pariah's SimpleAESEncryption (a key stretched
-        /// from the password with Argon2id, then AES-256-GCM). The result is safe to leave on disk; without the
-        /// password it is useless, and any change to it is detected.
-        /// </summary>
+        //Like Export but protected with a password: Pariah's SimpleAESEncryption (a key stretched
+        //from the password with Argon2id, then AES-256-GCM). The result is safe to leave on disk; without the
+        //password it is useless, and any change to it is detected.
         public byte[] ExportEncrypted(string password)
         {
             if (password is null || password.Length < MinPasswordLength)
@@ -231,10 +221,8 @@ namespace YuukoProtocol
             }
         }
 
-        /// <summary>
-        /// Restores an identity from <see cref="Export"/> or <see cref="ExportEncrypted"/> output, verifying both
-        /// keypairs still match. A password is required exactly when the data is encrypted.
-        /// </summary>
+        //Restores an identity from Export or ExportEncrypted output, verifying both
+        //keypairs still match. A password is required exactly when the data is encrypted.
         public static YuukoIdentity Import(byte[] data, string? password = null)
         {
             if (IsEncryptedIdentity(data))
@@ -294,10 +282,8 @@ namespace YuukoProtocol
             }
         }
 
-        /// <summary>
-        /// Writes the identity atomically. With a <paramref name="password"/> the file is encrypted (see
-        /// <see cref="ExportEncrypted"/>); without one it holds the private keys in the clear (see the note above).
-        /// </summary>
+        //Writes the identity atomically. With a password the file is encrypted (see
+        //ExportEncrypted); without one it holds the private keys in the clear (see the note above).
         public void Save(string path, string? password = null)
         {
             var full = Path.GetFullPath(path);
@@ -318,11 +304,9 @@ namespace YuukoProtocol
             File.Move(tmp, full, overwrite: true);
         }
 
-        /// <summary>
-        /// Loads the identity at <paramref name="path"/>, or creates and saves a new one if the file does not exist.
-        /// With a <paramref name="password"/> new files are written encrypted, and an existing plaintext file is
-        /// encrypted in place the first time it is loaded this way.
-        /// </summary>
+        //Loads the identity at path, or creates and saves a new one if the file does not exist.
+        //With a password new files are written encrypted, and an existing plaintext file is
+        //encrypted in place the first time it is loaded this way.
         public static YuukoIdentity LoadOrCreate(string path, string clientId, string? password = null)
         {
             if (File.Exists(path))
@@ -342,9 +326,9 @@ namespace YuukoProtocol
         }
     }
 
-    // ── Options ────────────────────────────────────────────────────────────────
+    //Options
 
-    /// <summary>A small thread-safe set of strings (ordinal comparison). Safe to change while handshakes are running.</summary>
+    //A small thread-safe set of strings (ordinal comparison). Safe to change while handshakes are running.
     public sealed class StringSet : IEnumerable<string>
     {
         private readonly ConcurrentDictionary<string, byte> _items = new(StringComparer.Ordinal);
@@ -359,39 +343,33 @@ namespace YuukoProtocol
 
     public sealed class HandshakeOptions
     {
-        /// <summary>Optional pre-shared key mixed into the HKDF salt. Empty = KEM-only trust.</summary>
+        //Optional pre-shared key mixed into the HKDF salt. Empty = KEM-only trust.
         public byte[] PreSharedKey { get; set; } = Array.Empty<byte>();
 
-        /// <summary>Client ids refused at admission (step 2). Replaceable with a richer policy later.</summary>
+        //Client ids refused at admission (step 2). Replaceable with a richer policy later.
         public StringSet BannedClients { get; } = new();
 
-        /// <summary>Shortest PreSharedKey accepted when <see cref="RequirePreSharedKey"/> is on.</summary>
+        //Shortest PreSharedKey accepted when RequirePreSharedKey is on.
         public const int MinPreSharedKeyBytes = 16;
 
-        /// <summary>
-        /// When true, creating a YuukoHandshake throws unless <see cref="PreSharedKey"/> is at least
-        /// <see cref="MinPreSharedKeyBytes"/> long. A peer without the key cannot complete a handshake.
-        /// One key is shared by every device, so it gates the mesh; it does not identify a device.
-        /// Use <see cref="TrustDevice"/> for that.
-        /// </summary>
+        //When true, creating a YuukoHandshake throws unless PreSharedKey is at least
+        //MinPreSharedKeyBytes long. A peer without the key cannot complete a handshake.
+        //One key is shared by every device, so it gates the mesh; it does not identify a device.
+        //Use TrustDevice for that.
         public bool RequirePreSharedKey { get; set; }
 
-        /// <summary>
-        /// Allowlist mode. When true, this device only talks to devices registered with
-        /// <see cref="TrustDevice"/>, and only with the exact keys that were pinned - in BOTH directions:
-        /// it refuses unknown or wrong-key devices that connect to it, and it refuses to open a session
-        /// with a provider whose signature does not match the pinned fingerprint.
-        /// </summary>
+        //Allowlist mode. When true, this device only talks to devices registered with
+        //TrustDevice, and only with the exact keys that were pinned - in BOTH directions:
+        //it refuses unknown or wrong-key devices that connect to it, and it refuses to open a session
+        //with a provider whose signature does not match the pinned fingerprint.
         public bool RequireKnownDevices { get; set; }
 
-        /// <summary>ClientId -> pinned key fingerprint (see <see cref="YuukoIdentity.Fingerprint"/>).</summary>
+        //ClientId -> pinned key fingerprint (see Fingerprint).
         public ConcurrentDictionary<string, string> TrustedDevices { get; } = new(StringComparer.Ordinal);
 
-        /// <summary>
-        /// Pins <paramref name="clientId"/> to <paramref name="fingerprint"/> and turns allowlist mode on.
-        /// Removing a device later (<see cref="UntrustDevice"/>) stops new handshakes only; it does not
-        /// end a session that already exists (use EclipseBroker.KickAsync for that).
-        /// </summary>
+        //Pins clientId to fingerprint and turns allowlist mode on.
+        //Removing a device later (UntrustDevice) stops new handshakes only; it does not
+        //end a session that already exists (use EclipseBroker.KickAsync for that).
         public void TrustDevice(string clientId, string fingerprint)
         {
             if (string.IsNullOrWhiteSpace(clientId))
@@ -405,82 +383,74 @@ namespace YuukoProtocol
 
         public bool UntrustDevice(string clientId) => TrustedDevices.TryRemove(clientId, out _);
 
-        /// <summary>Handshakes allowed in flight at once on the provider side; further HELLOs are dropped.</summary>
+        //Handshakes allowed in flight at once on the provider side; further HELLOs are dropped.
         public int MaxPendingHandshakes { get; set; } = 128;
 
-        /// <summary>Sessions kept per peer (older ones are retired); a peer that reconnects gets a new one.</summary>
+        //Sessions kept per peer (older ones are retired); a peer that reconnects gets a new one.
         public int MaxSessionsPerPeer { get; set; } = 4;
 
-        /// <summary>
-        /// A session older than this is replaced by a fresh handshake (new keys) the next time it is used.
-        /// Zero turns rotation off.
-        /// </summary>
+        //A session older than this is replaced by a fresh handshake (new keys) the next time it is used.
+        //Zero turns rotation off.
         public TimeSpan MaxSessionAge { get; set; } = TimeSpan.FromHours(1);
 
-        /// <summary>
-        /// How long an old session keeps working after it has been replaced (so messages already in flight are not
-        /// lost). Once a session is older than <see cref="MaxSessionAge"/> plus this, it is refused outright, so no
-        /// set of keys lives longer than that.
-        /// </summary>
+        //How long an old session keeps working after it has been replaced (so messages already in flight are not
+        //lost). Once a session is older than MaxSessionAge plus this, it is refused outright, so no
+        //set of keys lives longer than that.
         public TimeSpan RotationGrace { get; set; } = TimeSpan.FromMinutes(1);
 
-        /// <summary>Key expression the handshake traffic rides on.</summary>
+        //Key expression the handshake traffic rides on.
         public string Topic { get; set; } = "yuuko/handshake";
 
-        /// <summary>How long a requester waits for CHALLENGE/ACCEPT before giving up.</summary>
+        //How long a requester waits for CHALLENGE/ACCEPT before giving up.
         public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(10);
 
-        /// <summary>
-        /// Number of independent lanes (parallel AeadChannels) per established session, i.e.
-        /// how many requests a requester may have in flight to one peer at once. Each lane
-        /// keeps its own sequence, so lanes are ordered independently.
-        /// </summary>
+        //Number of independent lanes (parallel AeadChannels) per established session, i.e.
+        //how many requests a requester may have in flight to one peer at once. Each lane
+        //keeps its own sequence, so lanes are ordered independently.
         public int MaxChannels { get; set; } = 8;
     }
 
-    // ── Session ────────────────────────────────────────────────────────────────
+    //Session
 
-    /// <summary>Thrown when every lane of a session has been retired; the session must be replaced.</summary>
+    //Thrown when every lane of a session has been retired; the session must be replaced.
     internal sealed class SessionExhaustedException : InvalidOperationException
     {
         public SessionExhaustedException() : base("Every lane of this session has been retired.") { }
     }
 
-    /// <summary>
-    /// An established, mutually-derived encrypted session to one peer, multiplexed over a
-    /// pool of independent lanes. Each lane is a pair of directional
-    /// <see cref="Security.AeadChannel"/>s with its own sequence and a distinct nonce space
-    /// (derived from the base session id), so lanes can be used concurrently and out of
-    /// order relative to each other while each stays internally ordered.
-    ///
-    /// Both peers derive lane i identically from the shared key material + base session id,
-    /// so one side's lane i send channel pairs with the other side's lane i receive channel.
-    /// Each side borrows lanes for the exchanges IT starts (<see cref="AcquireLaneAsync"/>) and
-    /// answers on the lane index a request arrived on. The two sides draw from separate index
-    /// ranges, so a side's answer to a peer's request never shares a send channel with an
-    /// exchange that side started itself.
-    /// </summary>
+    //An established, mutually-derived encrypted session to one peer, multiplexed over a
+    //pool of independent lanes. Each lane is a pair of directional
+    //AeadChannels with its own sequence and a distinct nonce space
+    //(derived from the base session id), so lanes can be used concurrently and out of
+    //order relative to each other while each stays internally ordered.
+    //
+    //Both peers derive lane i identically from the shared key material + base session id,
+    //so one side's lane i send channel pairs with the other side's lane i receive channel.
+    //Each side borrows lanes for the exchanges IT starts (AcquireLaneAsync) and
+    //answers on the lane index a request arrived on. The two sides draw from separate index
+    //ranges, so a side's answer to a peer's request never shares a send channel with an
+    //exchange that side started itself.
     public sealed class HandshakeSession : IDisposable
     {
-        /// <summary>Lane used only for the handshake messages themselves; never handed out.</summary>
+        //Lane used only for the handshake messages themselves; never handed out.
         public const int HandshakeLane = 0;
 
-        /// <summary>Lane used only for session control (close notices); never handed out.</summary>
+        //Lane used only for session control (close notices); never handed out.
         public const int ControlLane = -1;
 
         private const int ResponderLaneBase = 1 << 20;
         private const int MaxInboundLaneOffset = 4096;
         private const int MaxLiveLanes = 1024;
 
-        /// <summary>Random id (hex) both peers know this session by; it travels in the clear and is not secret.</summary>
+        //Random id (hex) both peers know this session by; it travels in the clear and is not secret.
         public string Id { get; }
         public string LocalId { get; }
         public string RemoteId { get; }
 
-        /// <summary>Fingerprint of the remote device's keys, as established by the handshake.</summary>
+        //Fingerprint of the remote device's keys, as established by the handshake.
         public string RemoteFingerprint { get; }
 
-        /// <summary>True on the side that started the handshake.</summary>
+        //True on the side that started the handshake.
         public bool IsInitiator { get; }
         public DateTimeOffset CreatedUtc { get; } = DateTimeOffset.UtcNow;
 
@@ -517,17 +487,15 @@ namespace YuukoProtocol
             _laneAvailable = new SemaphoreSlim(_maxLanes);
         }
 
-        /// <summary>How many parallel lanes this side can start exchanges on.</summary>
+        //How many parallel lanes this side can start exchanges on.
         public int MaxLanes => _maxLanes;
 
-        /// <summary>True once every lane has been retired; the session can no longer start exchanges.</summary>
+        //True once every lane has been retired; the session can no longer start exchanges.
         public bool IsExhausted => Volatile.Read(ref _retired) >= _maxLanes;
 
-        /// <summary>
-        /// Borrows a free lane for one exchange, waiting if all lanes are busy. The caller MUST
-        /// <see cref="ReleaseLane"/> it when the exchange completes, or <see cref="RetireLane"/> it
-        /// if the exchange failed in a way that may have left the lane out of step with the peer.
-        /// </summary>
+        //Borrows a free lane for one exchange, waiting if all lanes are busy. The caller MUST
+        //ReleaseLane it when the exchange completes, or RetireLane it
+        //if the exchange failed in a way that may have left the lane out of step with the peer.
         public async Task<int> AcquireLaneAsync(CancellationToken ct = default)
         {
             while (true)
@@ -544,36 +512,32 @@ namespace YuukoProtocol
             }
         }
 
-        /// <summary>Returns a borrowed lane to the pool.</summary>
+        //Returns a borrowed lane to the pool.
         public void ReleaseLane(int lane)
         {
             _freeLanes.Enqueue(lane);
             _laneAvailable.Release();
         }
 
-        /// <summary>
-        /// Takes a borrowed lane out of service for good. Lanes are strictly sequenced, so a lost
-        /// message leaves a lane permanently out of step with the peer; the safe response is to
-        /// stop using it. When every lane has been retired the session is exhausted.
-        /// </summary>
+        //Takes a borrowed lane out of service for good. Lanes are strictly sequenced, so a lost
+        //message leaves a lane permanently out of step with the peer; the safe response is to
+        //stop using it. When every lane has been retired the session is exhausted.
         public void RetireLane(int lane)
         {
             if (Interlocked.Increment(ref _retired) >= _maxLanes)
                 _laneAvailable.Release(_maxLanes);   // wake anyone waiting so they can see IsExhausted
         }
 
-        /// <summary>Encrypts a payload on <paramref name="lane"/>; returns wire bytes.</summary>
+        //Encrypts a payload on lane; returns wire bytes.
         public byte[] EncryptOnLane(int lane, string method, byte[] plaintext) =>
             GetLane(lane).Encrypt(method, plaintext);
 
-        /// <summary>Decrypts wire bytes received on <paramref name="lane"/>.</summary>
+        //Decrypts wire bytes received on lane.
         public byte[] DecryptOnLane(int lane, byte[] wire) => DecryptOnLane(lane, wire, null);
 
-        /// <summary>
-        /// Decrypts wire bytes received on <paramref name="lane"/>, first checking that the sender
-        /// labelled them <paramref name="expectedMethod"/>. The label is authenticated, and the check
-        /// happens before decryption so a message of the wrong kind does not use up a sequence number.
-        /// </summary>
+        //Decrypts wire bytes received on lane, first checking that the sender
+        //labelled them expectedMethod. The label is authenticated, and the check
+        //happens before decryption so a message of the wrong kind does not use up a sequence number.
         public byte[] DecryptOnLane(int lane, byte[] wire, string? expectedMethod)
         {
             ValidateInboundLane(lane);
@@ -685,7 +649,7 @@ namespace YuukoProtocol
         }
     }
 
-    // ── Wire messages ──────────────────────────────────────────────────────────
+    //Wire messages
 
     internal enum HandshakeType { Hello, Challenge, Response, Accept, Reject }
 
@@ -778,12 +742,10 @@ namespace YuukoProtocol
         }
     }
 
-    // ── Handshake service ──────────────────────────────────────────────────────
+    //Handshake service
 
-    /// <summary>
-    /// Drives both sides of the handshake over an <see cref="IYuukoApi"/> transport. A
-    /// single instance can host (answer requesters) and request (open sessions to others).
-    /// </summary>
+    //Drives both sides of the handshake over an IYuukoApi transport. A
+    //single instance can host (answer requesters) and request (open sessions to others).
     public sealed class YuukoHandshake : IDisposable
     {
         private readonly IYuukoApi _api;
@@ -810,10 +772,10 @@ namespace YuukoProtocol
         private Func<YuukoPacket, Task>? _subscription;
         private int _disposed;
 
-        /// <summary>Raised when a handshake completes and a session becomes usable.</summary>
+        //Raised when a handshake completes and a session becomes usable.
         public event Action<HandshakeSession>? SessionEstablished;
 
-        /// <summary>Raised when a session is dropped, with a short human-readable reason.</summary>
+        //Raised when a session is dropped, with a short human-readable reason.
         public event Action<HandshakeSession, string>? SessionEnded;
 
         public YuukoHandshake(IYuukoApi api, YuukoIdentity identity, HandshakeOptions? options = null)
@@ -828,7 +790,7 @@ namespace YuukoProtocol
                     $"at least {HandshakeOptions.MinPreSharedKeyBytes} are required.");
         }
 
-        /// <summary>Newest established session for a peer, if one exists.</summary>
+        //Newest established session for a peer, if one exists.
         public bool TryGetSession(string remoteId, out HandshakeSession session)
         {
             if (_current.TryGetValue(remoteId, out session!))
@@ -856,7 +818,7 @@ namespace YuukoProtocol
                 if (Volatile.Read(ref _disposed) == 0) DropSession(old, "rotated");
             }, TaskScheduler.Default);
 
-        /// <summary>Finds a specific session by its id, but only if it belongs to <paramref name="remoteId"/>.</summary>
+        //Finds a specific session by its id, but only if it belongs to remoteId.
         public bool TryGetSessionById(string sessionId, string remoteId, out HandshakeSession session)
         {
             if (sessionId is not null && _byId.TryGetValue(sessionId, out session!) &&
@@ -869,21 +831,19 @@ namespace YuukoProtocol
             return false;
         }
 
-        /// <summary>Every session we hold with <paramref name="remoteId"/>, newest first.</summary>
+        //Every session we hold with remoteId, newest first.
         public IReadOnlyList<HandshakeSession> GetSessionsOf(string remoteId) =>
             _byId.Values.Where(s => string.Equals(s.RemoteId, remoteId, StringComparison.Ordinal))
                         .OrderByDescending(s => s.CreatedUtc).ToList();
 
-        /// <summary>The newest session of every connected peer.</summary>
+        //The newest session of every connected peer.
         public IReadOnlyList<HandshakeSession> GetSessions() => _current.Values.ToList();
 
-        /// <summary>Ids of every peer we hold a session with.</summary>
+        //Ids of every peer we hold a session with.
         public IReadOnlyCollection<string> ConnectedPeers => _current.Keys.ToList();
 
-        /// <summary>
-        /// Begins listening on the handshake topic so this peer can answer incoming
-        /// handshake requests (the "provider"/Eclipse role). Idempotent.
-        /// </summary>
+        //Begins listening on the handshake topic so this peer can answer incoming
+        //handshake requests (the "provider"/Eclipse role). Idempotent.
         public async Task StartAsync(CancellationToken ct = default)
         {
             if (_subscription is not null) return;
@@ -891,17 +851,17 @@ namespace YuukoProtocol
             await _api.SubscribeAsync(_opts.Topic, _subscription, ct);
         }
 
-        // ── Pairing (letting ONE new device in) ──────────────────────────────────
+        //Pairing (letting ONE new device in)
 
         private readonly object _pairLock = new();
         private byte[]? _pairToken;
         private DateTimeOffset _pairExpires;
         private int _pairAttemptsLeft;
 
-        /// <summary>Raised on the offering side when a newcomer has been paired: (its id, its key fingerprint). Its keys are already pinned.</summary>
+        //Raised on the offering side when a newcomer has been paired: (its id, its key fingerprint). Its keys are already pinned.
         public event Action<string, string>? DevicePaired;
 
-        /// <summary>Raised when a connection attempt is turned away before any key work: (who it claimed to be, why). Can be raised by anyone on the network, so a consumer must not trust or amplify it.</summary>
+        //Raised when a connection attempt is turned away before any key work: (who it claimed to be, why). Can be raised by anyone on the network, so a consumer must not trust or amplify it.
         public event Action<string, string>? HandshakeRefused;
 
         private void RaiseRefused(string who, string why)
@@ -909,14 +869,12 @@ namespace YuukoProtocol
             try { HandshakeRefused?.Invoke(who, why); } catch { /* a subscriber's bug must not break the handshake */ }
         }
 
-        /// <summary>
-        /// Opens a pairing window and returns its one-time token (put it in a <see cref="PairingCode"/>). For
-        /// <paramref name="lifetime"/>, or until one newcomer finishes, or <see cref="CancelPairing"/>, a device that
-        /// holds the token may connect even if it is not on the allowlist. Its keys are pinned when it succeeds, and the
-        /// token is spent. Only one window is open at a time; opening another replaces the first.
-        /// <paramref name="maxAttempts"/> limits how many connection attempts may use the window, so it cannot be
-        /// guessed at forever (and, as a cost, a nuisance can use the attempts up to close it: just offer a new code).
-        /// </summary>
+        //Opens a pairing window and returns its one-time token (put it in a PairingCode). For
+        //lifetime, or until one newcomer finishes, or CancelPairing, a device that
+        //holds the token may connect even if it is not on the allowlist. Its keys are pinned when it succeeds, and the
+        //token is spent. Only one window is open at a time; opening another replaces the first.
+        //maxAttempts limits how many connection attempts may use the window, so it cannot be
+        //guessed at forever (and, as a cost, a nuisance can use the attempts up to close it: just offer a new code).
         public byte[] BeginPairing(TimeSpan lifetime, int maxAttempts = 10)
         {
             ThrowIfDisposed();
@@ -933,7 +891,7 @@ namespace YuukoProtocol
             }
         }
 
-        /// <summary>Closes the pairing window now.</summary>
+        //Closes the pairing window now.
         public void CancelPairing()
         {
             lock (_pairLock)
@@ -943,7 +901,7 @@ namespace YuukoProtocol
             }
         }
 
-        /// <summary>True while a pairing window is open.</summary>
+        //True while a pairing window is open.
         public bool PairingOpen
         {
             get { lock (_pairLock) return _pairToken is not null && DateTimeOffset.UtcNow < _pairExpires && _pairAttemptsLeft > 0; }
@@ -986,12 +944,10 @@ namespace YuukoProtocol
             return h.GetHashAndReset();
         }
 
-        /// <summary>
-        /// Joining side: pins <paramref name="providerId"/> to <paramref name="providerFingerprint"/> (from the pairing
-        /// code, so the provider has to prove those keys), then connects using the one-time <paramref name="token"/>.
-        /// Returns the session, or null (and leaves nothing pinned that was not before) if it did not work: wrong or
-        /// expired code, a window that is closed, unreachable, or the other device is not who the code said.
-        /// </summary>
+        //Joining side: pins providerId to providerFingerprint (from the pairing
+        //code, so the provider has to prove those keys), then connects using the one-time token.
+        //Returns the session, or null (and leaves nothing pinned that was not before) if it did not work: wrong or
+        //expired code, a window that is closed, unreachable, or the other device is not who the code said.
         public async Task<HandshakeSession?> PairAsync(string providerId, string providerFingerprint, byte[] token, CancellationToken ct = default)
         {
             ThrowIfDisposed();
@@ -1019,10 +975,8 @@ namespace YuukoProtocol
             return session;
         }
 
-        /// <summary>
-        /// Requester role: performs a handshake with <paramref name="providerId"/> and
-        /// returns the established session, or null on rejection/timeout.
-        /// </summary>
+        //Requester role: performs a handshake with providerId and
+        //returns the established session, or null on rejection/timeout.
         public async Task<HandshakeSession?> RequestSessionAsync(string providerId, CancellationToken ct = default)
         {
             ThrowIfDisposed();
@@ -1067,7 +1021,7 @@ namespace YuukoProtocol
             return fresh;
         }
 
-        /// <summary>Ends every session with <paramref name="remoteId"/>. Returns how many were dropped.</summary>
+        //Ends every session with remoteId. Returns how many were dropped.
         public int DropPeer(string remoteId, string reason = "dropped")
         {
             List<HandshakeSession> dead;
@@ -1081,7 +1035,7 @@ namespace YuukoProtocol
             return dead.Count;
         }
 
-        /// <summary>Ends one session. If it was the newest for its peer, the next newest takes over.</summary>
+        //Ends one session. If it was the newest for its peer, the next newest takes over.
         public bool DropSession(HandshakeSession session, string reason = "dropped")
         {
             bool removed;
@@ -1148,7 +1102,7 @@ namespace YuukoProtocol
             }
         }
 
-        // ── Message dispatch ────────────────────────────────────────────────────
+        //Message dispatch
 
         private async Task OnMessageAsync(YuukoPacket pkt)
         {
@@ -1167,7 +1121,7 @@ namespace YuukoProtocol
             }
         }
 
-        // ── Provider role ─────────────────────────────────────────────────────
+        //Provider role
 
         private async Task OnHelloAsync(HandshakeMessage hello)
         {
@@ -1348,7 +1302,7 @@ namespace YuukoProtocol
             });
         }
 
-        // ── Requester role ────────────────────────────────────────────────────
+        //Requester role
 
         private async Task OnChallengeAsync(HandshakeMessage ch)
         {
@@ -1459,7 +1413,7 @@ namespace YuukoProtocol
             state.Completion.TrySetResult(null);
         }
 
-        // ── Helpers ─────────────────────────────────────────────────────────────
+        //Helpers
 
         private void RegisterSession(HandshakeSession session)
         {
@@ -1609,7 +1563,7 @@ namespace YuukoProtocol
             _pending.Clear();
         }
 
-        // ── Per-role state ───────────────────────────────────────────────────────
+        //Per-role state
 
         private sealed class PendingHandshake
         {

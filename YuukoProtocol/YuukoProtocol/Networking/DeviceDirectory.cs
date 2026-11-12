@@ -27,7 +27,7 @@ using JSONObject = System.Text.Json.Nodes.JsonObject;
 
 namespace YuukoProtocol
 {
-    /// <summary>One paired device.</summary>
+    //One paired device.
     public sealed record DeviceRecord(
         string Moniker,
         string ClientId,
@@ -37,7 +37,7 @@ namespace YuukoProtocol
         );
 
 
-    /// <summary>A paired device joined with its live connection state.</summary>
+    //A paired device joined with its live connection state.
     public sealed record DeviceStatus(
         string Moniker,
         string ClientId,
@@ -48,34 +48,30 @@ namespace YuukoProtocol
         bool IsOnline,
         DateTimeOffset? LastSeenUtc);
 
-    /// <summary>
-    /// The paired-device list. In memory by default. Give it a key and a path and it is kept on disk, ENCRYPTED and
-    /// tamper-evident with that key (the contents are only names and fingerprints, so the point of the key is that nobody can
-    /// add a trusted device by editing the file). Whoever holds the key can read and change the list.
-    /// </summary>
+    //The paired-device list. In memory by default. Give it a key and a path and it is kept on disk, ENCRYPTED and
+    //tamper-evident with that key (the contents are only names and fingerprints, so the point of the key is that nobody can
+    //add a trusted device by editing the file). Whoever holds the key can read and change the list.
     public sealed class DeviceDirectory
     {
         private readonly object _lock = new();
         private readonly List<DeviceRecord> _items = new();
         private readonly string? _path;
 
-        /// <summary>Raised after any change (add, remove, rename, regroup).</summary>
+        //Raised after any change (add, remove, rename, regroup).
         public event Action? Changed;
 
         private readonly SecureData _key;   // a struct: there is no null to check, a default key is refused by the handler
 
         private const string Variable = "FileShape";
 
-        /// <summary>A directory that lives in memory only.</summary>
+        //A directory that lives in memory only.
         public DeviceDirectory() { }
 
-        /// <summary>
-        /// A directory saved to <paramref name="path"/>: a file name ending in <c>.json</c> (or no extension), kept in that folder,
-        /// encrypted with <paramref name="key"/>. If the file already exists it is loaded before this returns. A file that cannot be
-        /// opened (wrong key, damaged, changed, or from a newer version) throws <see cref="FormatException"/>: it is NEVER treated as an
-        /// empty list, because an empty list would silently un-pair every device. The previous version of the file is kept beside it
-        /// as <c>.bak</c>. The directory keeps using <paramref name="key"/> for as long as it lives, so do not dispose it first.
-        /// </summary>
+        //A directory saved to path: a file name ending in .json (or no extension), kept in that folder,
+        //encrypted with key. If the file already exists it is loaded before this returns. A file that cannot be
+        //opened (wrong key, damaged, changed, or from a newer version) throws FormatException: it is NEVER treated as an
+        //empty list, because an empty list would silently un-pair every device. The previous version of the file is kept beside it
+        //as .bak. The directory keeps using key for as long as it lives, so do not dispose it first.
         public DeviceDirectory(SecureData key, string? path = null)
         {
             _key = key;
@@ -89,7 +85,7 @@ namespace YuukoProtocol
             Load();
         }
 
-        /// <summary>Nicknames and group names: 1-64 characters of letters, digits, '.', '_' and '-'.</summary>
+        //Nicknames and group names: 1-64 characters of letters, digits, '.', '_' and '-'.
         public static bool IsValidName(string? s) =>
             !string.IsNullOrEmpty(s) && s.Length <= 64 &&
             s.All(c => char.IsAsciiLetterOrDigit(c) || c is '.' or '_' or '-');
@@ -99,7 +95,7 @@ namespace YuukoProtocol
             lock (_lock) return _items.ToList();
         }
 
-        /// <summary>Looks a device up by nickname (case-insensitive).</summary>
+        //Looks a device up by nickname (case-insensitive).
         public DeviceRecord? Find(string moniker)
         {
             lock (_lock) return _items.FirstOrDefault(i => string.Equals(i.Moniker, moniker, StringComparison.OrdinalIgnoreCase));
@@ -121,7 +117,7 @@ namespace YuukoProtocol
             lock (_lock) return _items.Where(i => i.Groups.Any(g => string.Equals(g, group, StringComparison.OrdinalIgnoreCase))).ToList();
         }
 
-        /// <summary>Pairs a device. Nickname, id and fingerprint must each be unused.</summary>
+        //Pairs a device. Nickname, id and fingerprint must each be unused.
         public DeviceRecord Add(string moniker, string clientId, string fingerprint,
             string? displayName = null, IEnumerable<string>? groups = null)
         {
@@ -155,7 +151,7 @@ namespace YuukoProtocol
             return true;
         }
 
-        /// <summary>Changes a nickname. The device's key and connection are untouched.</summary>
+        //Changes a nickname. The device's key and connection are untouched.
         public DeviceRecord Rename(string oldMoniker, string newMoniker)
         {
             if (!IsValidName(newMoniker)) throw new ArgumentException(BadNameMessage("nickname"), nameof(newMoniker));
@@ -193,7 +189,7 @@ namespace YuukoProtocol
             return updated;
         }
 
-        // ── internals ──────────────────────────────────────────────────────────
+        //Internals
 
         private static string BadNameMessage(string what) =>
             $"A {what} is 1-64 characters: letters, digits, '.', '_' or '-'.";
@@ -236,7 +232,7 @@ namespace YuukoProtocol
             public FileShape() { }
         }
 
-        // ── saving and loading ─────────────────────────────────────────────────
+        //Saving and loading
 
         // Pariah's JSON handler is async-only. The public methods here are synchronous (so nothing that calls them had to change),
         // so the async work is run on the thread pool and waited for: there is no synchronization context for it to deadlock
@@ -256,13 +252,12 @@ namespace YuukoProtocol
         private static string SerializeShape(List<DeviceRecord> items) =>
             JsonSerializer.Serialize(new FileShape { Devices = items });
 
-        /// <summary>
-        /// Writes the list. The new version goes to a temporary file first and is then swapped in, because the handler writes the
-        /// real file in place (a crash half way through would leave a damaged file and an un-paired group). The version it
-        /// replaces is kept as <c>.bak</c>. Internal so the self-test can write files this class itself never would.
-        /// </summary>
+        //Writes the list. The new version goes to a temporary file first and is then swapped in, because the handler writes the
+        //real file in place (a crash half way through would leave a damaged file and an un-paired group). The version it
+        //replaces is kept as .bak. Internal so the self-test can write files this class itself never would.
         internal static async Task WriteFileAsync(string file, SecureData key, string shapeJson)
         {
+            file = System.IO.Path.GetFullPath(file);      //A name with no folder in front of it is the current folder
             string dir = Path.GetDirectoryName(file)!;
             string name = Path.GetFileNameWithoutExtension(file);
             Directory.CreateDirectory(dir);
@@ -289,6 +284,7 @@ namespace YuukoProtocol
 
         internal static async Task<string> ReadFileAsync(string file, SecureData key)
         {
+            file = System.IO.Path.GetFullPath(file);
             var json = await JSONDataHandler.LoadJsonFile(Path.GetFileNameWithoutExtension(file), Path.GetDirectoryName(file)!);
             return (string)await JSONDataHandler.GetVariable<string>(json, Variable, key);
         }
@@ -335,7 +331,7 @@ namespace YuukoProtocol
         }
     }
 
-    /// <summary>Talks to one paired device by nickname.</summary>
+    //Talks to one paired device by nickname.
     public sealed class DeviceHandle
     {
         private readonly EclipseBroker _broker;
@@ -356,26 +352,26 @@ namespace YuukoProtocol
         public bool IsOnline => _broker.IsOnline(ClientId);
         public DateTimeOffset? LastSeenUtc => _broker.LastSeen(ClientId);
 
-        /// <summary>Asks the device to run a command and waits for its ack.</summary>
+        //Asks the device to run a command and waits for its ack.
         public Task<CommandAck> SendAsync(string command, byte[]? payload = null, CommandOptions? options = null, CancellationToken ct = default) =>
             _broker.SendCommandAsync(ClientId, command, payload, options, ct);
 
-        /// <summary>Same, with a text payload.</summary>
+        //Same, with a text payload.
         public Task<CommandAck> SendTextAsync(string command, string text, CommandOptions? options = null, CancellationToken ct = default) =>
             _broker.SendCommandAsync(ClientId, command, System.Text.Encoding.UTF8.GetBytes(text), options, ct);
 
         public Task<CommandAck> PingAsync(CancellationToken ct = default) => _broker.PingAsync(ClientId, ct);
 
-        /// <summary>Fetches the packets the device is serving on a topic.</summary>
+        //Fetches the packets the device is serving on a topic.
         public Task<IReadOnlyList<YuukoPacket>> RequestAsync(string topic, CancellationToken ct = default) =>
             _broker.RequestAsync(ClientId, topic, ct);
 
-        /// <summary>Ends our sessions with the device. With <paramref name="ban"/> it also cannot reconnect until unbanned.</summary>
+        //Ends our sessions with the device. With ban it also cannot reconnect until unbanned.
         public Task<bool> KickAsync(bool ban = false, CancellationToken ct = default) =>
             _broker.KickAsync(ClientId, ban, null, ct);
     }
 
-    /// <summary>A group of paired devices you can send to at once.</summary>
+    //A group of paired devices you can send to at once.
     public sealed class DeviceSet : IEnumerable<DeviceHandle>
     {
         internal DeviceSet(IReadOnlyList<DeviceHandle> devices) => Devices = devices;
@@ -383,14 +379,14 @@ namespace YuukoProtocol
         public IReadOnlyList<DeviceHandle> Devices { get; }
         public int Count => Devices.Count;
 
-        /// <summary>The same set without the named devices.</summary>
+        //The same set without the named devices.
         public DeviceSet Except(params string[] monikers) => new(Devices
             .Where(d => !monikers.Any(m => string.Equals(m, d.Moniker, StringComparison.OrdinalIgnoreCase))).ToList());
 
-        /// <summary>Only the devices we have heard from recently.</summary>
+        //Only the devices we have heard from recently.
         public DeviceSet OnlineOnly() => new(Devices.Where(d => d.IsOnline).ToList());
 
-        /// <summary>Sends the command to every device in parallel; the result maps each nickname to its ack.</summary>
+        //Sends the command to every device in parallel; the result maps each nickname to its ack.
         public async Task<IReadOnlyDictionary<string, CommandAck>> SendAsync(string command, byte[]? payload = null,
             CommandOptions? options = null, CancellationToken ct = default)
         {
