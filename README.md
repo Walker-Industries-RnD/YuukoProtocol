@@ -73,9 +73,7 @@ The following (Free, Open Source Solutions on our Github) libraries are required
 
 Check these out!
 
-[XRUIOS.Barebones; the project this was made for and](https://github.com/Walker-Industries-RnD/XRUIOS.Barebones)
-
-[XRUIOS.Dirac; the implementation of this on a real setting!](https://github.com/Walker-Industries-RnD/XRUIOS.Dirac/tree/main)
+[The XRUIOS; the project this was made for! ](https://xruios.xyz/)
 
 ## Stages
 
