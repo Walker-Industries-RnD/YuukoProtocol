@@ -95,12 +95,10 @@ Check these out!
 
 ## Security (Implemented)
 
-Built and benchmarked: see [[6 - Speed and Numbers]] for the speed (~5 ms post-quantum handshake, then ~40 µs warm request round-trips; the crypto is effectively free) and [[1 - Security Overview]] for what it does and doesn't protect.
-
 - **Pairing** → one device shows a code (its address, a one-time token and a temporary certificate), the other types it, and each pins the other's keys
-- **Handshake** → Kyber-1024 key exchange with a throw-away key for every handshake (so a stolen identity can't open an old recording), the provider proves who it is by signing the whole exchange with Dilithium5, and the group key is mixed in ([[2 - The Group Key]])
+- **Handshake** → Kyber-1024 key exchange with a throw-away key for every handshake (so a stolen identity can't open an old recording), the provider proves who it is by signing the whole exchange with Dilithium5, and the group key is mixed in the group key
 - **Session** → AES-256-GCM + per-message nonces, replaced after an hour
-- **Link** → TLS 1.3 with certificates both ways under all of it ([[3 - TLS and the Link]])
+- **Link** → TLS 1.3 with certificates both ways under all of it 
 - **Everything saved** → encrypted (identity file, device list, reconnect file), and a wrong password or a damaged file is an error, never a quiet fresh start
 - Designed to resist classical & quantum adversaries (where Kyber helps)
 
